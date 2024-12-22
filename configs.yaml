@@ -1,0 +1,7 @@
+ai_studio:
+  model_id: gemini-2.0-flash-exp
+  generation_config:
+    temperature: 1
+    top_p: 0.95
+    top_k: 40
+    max_output_tokens: 8192

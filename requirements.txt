@@ -1,0 +1,9 @@
+isort
+black
+flake8
+mypy
+pyyaml
+pydantic
+python-dotenv
+gradio
+google-cloud-aiplatform
