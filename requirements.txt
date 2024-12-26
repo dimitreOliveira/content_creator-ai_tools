@@ -6,4 +6,4 @@ pyyaml
 pydantic
 python-dotenv
 gradio
-google-cloud-aiplatform
+google-genai

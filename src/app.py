@@ -1,38 +1,48 @@
 import logging
-
-# import os
-# import time
-import gradio as gr
-# import google.generativeai as genai
-# from dotenv import load_dotenv
 from enum import Enum
 
-# from common import parse_configs
+import gradio as gr
+from dotenv import load_dotenv
 
-# CONFIGS_PATH = "configs.yaml"
+from utils import (
+    build_prompt,
+    count_tokens,
+    generate_content,
+    load_config,
+    setup_gemini_client,
+    upload_file,
+)
 
-
-class ContentInputType(Enum):
-    BLOG_POST = "blog post"
-    CODE_SCRIPT = "code script"
-
-
-class ContentOutputType(Enum):
-    BLOG_POST = "blog post"
-    VIDEO_WALKTHROUGH = "video walkthrough"
-
+CONFIG_PATH = "configs.yaml"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# load_dotenv()
 
-def create_prompt(input_type, output_type):
-    prompt = f"Generate a '{output_type}' based on this '{input_type}'."
-    return prompt
+class ContentInputType(Enum):
+    BLOG_POST = "Blog post"
+    CODE_SCRIPT = "Code"
 
 
-def generate_fn(file_input, prompt_content, input_type, output_type):
+class ContentOutputType(Enum):
+    BLOG_POST = "Blog post"
+    README = "GitHub README.md file"
+    CODE_BASE = "Code base"
+    VIDEO_WALKTHROUGH = "Video walkthrough"
+
+
+def generate_fn(file_input, additional_prompt, input_type, output_type):
+    """Generates content based on user input and configurations.
+
+    Args:
+        file_input: The path to the input file.
+        additional_prompt: Additional instructions from the user.
+        input_type: The type of the input content.
+        output_type: The desired output content type.
+
+    Returns:
+       The generated text output.
+    """
     if not input_type:
         raise gr.Error("Choose an input type")
 
@@ -42,44 +52,85 @@ def generate_fn(file_input, prompt_content, input_type, output_type):
     if not file_input:
         raise gr.Error("Provide and input file")
 
-    prompt = create_prompt(input_type, output_type)
-    output = f"""
-    Placeholder content generated
-    Input file '{file_input}'
-    Additional prompt information '{prompt_content}'
-    Based on prompt '{prompt}'
-    """
+    prompt = build_prompt(input_type, output_type)
+    logging.info(f"Base prompt:\n{prompt}")
+
+    prompt = f"{prompt}\n{additional_prompt}"
+    logging.info(f"Final prompt:\n{prompt}")
+
+    file_upload = upload_file(client, file_input)
+    logging.info(f"Uploaded file: {file_upload.uri}")
+
+    logging.info("Counting prompt token count...")
+    token_count = count_tokens(client, prompt, file_upload, client_configs["model_id"])
+    logging.info(f"Prompt had {token_count} tokens")
+
+    logging.info("Generating output...")
+    output = generate_content(
+        client,
+        prompt,
+        file_upload,
+        client_configs["model_id"],
+        client_configs["generation_config"],
+    )
+    logging.info("Output generated")
     return output
 
 
-with gr.Blocks() as demo:
-    with gr.Row():
-        with gr.Column(scale=2, min_width=300):
-            file_input = gr.File(label="Select a file to upload", file_count="single")
+if __name__ == "__main__":
+    # Load configurations
+    app_configs = load_config(CONFIG_PATH)
+    if not app_configs:
+        exit()
 
-        with gr.Column(scale=1, min_width=300):
-            radio_input_type = gr.Radio(
-                [x.value for x in list(ContentInputType)],
-                label="Input type",
+    # Load env vars
+    load_dotenv()
+
+    # Setup Gemini client
+    client = setup_gemini_client()
+    # Only using AI Studio for now
+    client_configs = app_configs["ai_studio"]
+
+    # Build the Gradio app
+    with gr.Blocks() as demo:
+
+        with gr.Row():
+            with gr.Column(scale=1, min_width=300):
+                file_input = gr.File(
+                    label="Select a file to upload", file_count="single"
+                )
+
+            with gr.Column(scale=2, min_width=300):
+                radio_input_type = gr.Radio(
+                    [x.value for x in list(ContentInputType)],
+                    label="Input type",
+                )
+
+            with gr.Column(scale=2, min_width=300):
+                radio_output_type = gr.Radio(
+                    [x.value for x in list(ContentOutputType)],
+                    label="What kind of content would you like to create?",
+                )
+
+        additional_prompt = gr.Textbox(
+            label="Additional prompt information",
+            info="Describe the kind of content that you want to generate",
+        )
+
+        with gr.Row():
+            generated_content = gr.Textbox(label="Generated content")
+
+        with gr.Row():
+            generate_content_btn = gr.Button("Generate content")
+            generate_content_btn.click(
+                fn=generate_fn,
+                inputs=[
+                    file_input,
+                    additional_prompt,
+                    radio_input_type,
+                    radio_output_type,
+                ],
+                outputs=generated_content,
             )
 
-        with gr.Column(scale=1, min_width=300):
-            radio_output_type = gr.Radio(
-                [x.value for x in list(ContentOutputType)],
-                label="What kind of content would you like to create?",
-            )
-
-    prompt_content = gr.Textbox(
-        label="Additional prompt information",
-        info="Describe the kind of content that you want to generate",
-    )
-
-    generated_content = gr.Textbox(label="Generated content")
-    generate_content_btn = gr.Button("Generate content")
-    generate_content_btn.click(
-        fn=generate_fn,
-        inputs=(file_input, prompt_content, radio_input_type, radio_output_type),
-        outputs=generated_content,
-    )
-
-demo.launch()
+    demo.launch()
