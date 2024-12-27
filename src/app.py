@@ -4,11 +4,12 @@ from enum import Enum
 import gradio as gr
 from dotenv import load_dotenv
 
+from common import load_config
 from utils import (
     build_prompt,
     count_tokens,
     generate_content,
-    load_config,
+    iterate_content,
     setup_gemini_client,
     upload_file,
 )
@@ -74,6 +75,39 @@ def generate_fn(file_input, additional_prompt, input_type, output_type):
         client_configs["generation_config"],
     )
     logging.info("Output generated")
+
+    return output
+
+
+def iterate_fn(prompt, additional_prompt):
+    """Generates content based on user input and configurations.
+
+    Args:
+        prompt: Base prompt used for the iteration.
+        additional_prompt: Additional instructions from the user.
+
+    Returns:
+       The generated text output.
+    """
+
+    if not prompt:
+        raise gr.Error("Input prompt is empty")
+
+    if not additional_prompt:
+        raise gr.Error("Iteration prompt is empty")
+
+    prompt = f"{prompt}\n{additional_prompt}"
+    logging.info(f"Iteration prompt:\n{prompt}")
+
+    logging.info("Generating output...")
+    output = iterate_content(
+        client,
+        prompt,
+        client_configs["model_id"],
+        client_configs["generation_config"],
+    )
+    logging.info("Output generated")
+
     return output
 
 
@@ -129,6 +163,23 @@ if __name__ == "__main__":
                     additional_prompt,
                     radio_input_type,
                     radio_output_type,
+                ],
+                outputs=generated_content,
+            )
+
+        with gr.Row():
+            additional_steps = gr.Textbox(
+                label="Keep iterate over the content",
+                info="Describe what you want to modify over the content created",
+            )
+
+        with gr.Row():
+            iterate_content_btn = gr.Button("Iterate over the content")
+            iterate_content_btn.click(
+                fn=iterate_fn,
+                inputs=[
+                    generated_content,
+                    additional_steps,
                 ],
                 outputs=generated_content,
             )

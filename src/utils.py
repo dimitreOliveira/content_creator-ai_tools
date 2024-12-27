@@ -1,35 +1,11 @@
-import json
 import logging
 import os
 
-import yaml
 from google import genai
 from google.genai import types
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def load_config(config_path="configs.yaml"):
-    """Loads configuration from a YAML file.
-
-    Args:
-        config_path: Path to the YAML configuration file.
-
-    Returns:
-        A dictionary containing the configuration parameters.
-    """
-    try:
-        with open(config_path, "r") as file:
-            config = yaml.safe_load(file)
-        logger.info(f"Configs: \n{json.dumps(config, indent=4)}")
-        return config
-    except FileNotFoundError:
-        logger.error(f"Configuration file not found at: {config_path}")
-        return None
-    except yaml.YAMLError as e:
-        logger.error(f"Error parsing YAML config file: {e}")
-        return None
 
 
 def setup_gemini_client(api_key=None):
@@ -121,6 +97,32 @@ def generate_content(client, prompt, file_upload, model_id, generation_config):
             ),
             prompt,
         ],
+    )
+
+    return response.text
+
+
+def iterate_content(client, prompt, model_id, generation_config):
+    """Generates content using the Gemini API.
+
+    Args:
+        client: The Gemini API client.
+        prompt: The text prompt.
+        model_id: The ID of the Gemini model.
+        generation_config: Configuration for content generation.
+
+    Returns:
+        The generated text output.
+    """
+    response = client.models.generate_content(
+        model=model_id,
+        config=types.GenerateContentConfig(
+            temperature=generation_config["temperature"],
+            top_p=generation_config["top_p"],
+            top_k=generation_config["top_k"],
+            max_output_tokens=generation_config["max_output_tokens"],
+        ),
+        contents=[prompt],
     )
 
     return response.text
