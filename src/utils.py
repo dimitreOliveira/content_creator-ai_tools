@@ -36,7 +36,7 @@ def upload_file(client, file_path):
     return file_upload
 
 
-def count_tokens(client, prompt, file_upload, model_id):
+def count_tokens_with_file(client, prompt, file_upload, model_id):
     """Counts the number of tokens in a prompt including file content.
 
     Args:
@@ -65,7 +65,28 @@ def count_tokens(client, prompt, file_upload, model_id):
     return response.total_tokens
 
 
-def generate_content(client, prompt, file_upload, model_id, generation_config):
+def count_tokens(client, prompt, model_id):
+    """Counts the number of tokens in a prompt including file content.
+
+    Args:
+        client: The Gemini API client.
+        prompt: The text prompt.
+        model_id: The ID of the Gemini model.
+
+    Returns:
+        The total number of tokens.
+    """
+    response = client.models.count_tokens(
+        model=model_id,
+        contents=[prompt],
+    )
+
+    return response.total_tokens
+
+
+def generate_content_with_file(
+    client, prompt, file_upload, model_id, generation_config
+):
     """Generates content using the Gemini API.
 
     Args:
@@ -102,7 +123,7 @@ def generate_content(client, prompt, file_upload, model_id, generation_config):
     return response.text
 
 
-def iterate_content(client, prompt, model_id, generation_config):
+def generate_content(client, prompt, model_id, generation_config):
     """Generates content using the Gemini API.
 
     Args:
@@ -138,5 +159,5 @@ def build_prompt(input_type, output_type):
     Returns:
         The generated base prompt.
     """
-    prompt = f"Create a '{output_type}' based on this '{input_type}' file input."
+    prompt = f"Create a {output_type} based on this {input_type} input."
     return prompt
