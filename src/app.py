@@ -122,10 +122,7 @@ def generate_fn(
 
     logger.info("Output generated")
 
-    return {
-        "generated_content": output,
-        "content_row": gr.Row(visible=True),
-    }
+    return [output, gr.Row(visible=True)]
 
 
 def iterate_fn(prompt: str, additional_prompt: str) -> str:
