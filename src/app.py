@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from typing import Any, Dict, Optional, Tuple
 
 import gradio as gr
 from dotenv import load_dotenv
@@ -16,9 +17,11 @@ from utils import (
     upload_file,
 )
 
-CONFIG_PATH = "configs.yaml"
+CONFIG_PATH: str = "configs.yaml"
+MAX_FILE_SIZE_MB: int = 10 * 1024 * 1024
+LOG_LEVEL: int = logging.INFO
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 
@@ -36,17 +39,17 @@ class ContentOutputType(Enum):
 
 
 def generate_fn(
-    file_input,
-    parsed_repository_tree,
-    parsed_repository_content,
-    additional_prompt,
-    input_type,
-    output_type,
-):
+    file_input: Optional[gr.File],
+    parsed_repository_tree: Optional[str],
+    parsed_repository_content: Optional[str],
+    additional_prompt: str,
+    input_type: Optional[str],
+    output_type: Optional[str],
+) -> Dict[str, Any]:
     """Generates content based on user input and configurations.
 
     Args:
-        file_input: The path to the input file.
+        file_input: The file input from the Gradio interface.
         parsed_repository_tree: GitHub repository directory structure parsed as a txt input.
         parsed_repository_content: GitHub repository content parsed as a txt input.
         additional_prompt: Additional instructions from the user.
@@ -54,7 +57,7 @@ def generate_fn(
         output_type: The desired output content type.
 
     Returns:
-       The generated text output.
+       A dictionary containing generated text output and a flag to control UI.
     """
     if not input_type:
         raise gr.Error("Choose an input type")
@@ -62,35 +65,53 @@ def generate_fn(
     if not output_type:
         raise gr.Error("Choose an output type")
 
-    if not file_input and (
-        (not parsed_repository_tree) and (not parsed_repository_content)
-    ):
+    if not file_input and not (parsed_repository_tree and parsed_repository_content):
         raise gr.Error("Provide an input file (repository or file)")
 
-    if file_input and (parsed_repository_tree and parsed_repository_content):
+    if file_input and (parsed_repository_tree or parsed_repository_content):
         raise gr.Error("Provide only a single input (repository or file)")
 
     prompt = build_prompt(input_type, output_type)
-    logging.info(f"Base prompt:\n{prompt}")
+    logger.info(f"Base prompt:\n{prompt}")
 
-    if file_input:
+    output: str = ""  # Initialize output to default empty string
+
+    if parsed_repository_tree and parsed_repository_content:
+        prompt = f"{parsed_repository_tree}\n{parsed_repository_content}\n{prompt}\n{additional_prompt}"
+
+        logger.info("Counting prompt token count...")
+        gr.Info("Counting prompt token count...")
+        token_count = count_tokens(client, prompt, client_configs["model_id"])
+        logger.info(f"Prompt had {token_count} tokens")
+        gr.Info(f"Prompt had {token_count} tokens")
+
+        logger.info("Generating output...")
+        gr.Info("Generating output...")
+        output = generate_content(
+            client,
+            prompt,
+            client_configs["model_id"],
+            client_configs["generation_config"],
+        )
+
+    elif file_input:
         prompt = f"{prompt}\n{additional_prompt}"
 
+        logger.info("Uploading file...")
         gr.Info("Uploading file...")
-        logging.info("Uploading file...")
-        file_upload = upload_file(client, file_input)
-        logging.info(f"Uploaded file: {file_upload.uri}")
+        file_upload = upload_file(client, file_input.name)  # type: ignore
+        logger.info(f"Uploaded file: {file_upload.uri}")
 
+        logger.info("Counting prompt token count...")
         gr.Info("Counting prompt token count...")
-        logging.info("Counting prompt token count...")
         token_count = count_tokens_with_file(
             client, prompt, file_upload, client_configs["model_id"]
         )
+        logger.info(f"Prompt had {token_count} tokens")
         gr.Info(f"Prompt had {token_count} tokens")
-        logging.info(f"Prompt had {token_count} tokens")
 
+        logger.info("Generating output...")
         gr.Info("Generating output...")
-        logging.info("Generating output...")
         output = generate_content_with_file(
             client,
             prompt,
@@ -99,33 +120,15 @@ def generate_fn(
             client_configs["generation_config"],
         )
 
-    if parsed_repository_tree and parsed_repository_content:
-        prompt = f"{parsed_repository_tree}\n{parsed_repository_content}\n{prompt}\n{additional_prompt}"
-
-        gr.Info("Counting prompt token count...")
-        logging.info("Counting prompt token count...")
-        token_count = count_tokens(client, prompt, client_configs["model_id"])
-        gr.Info(f"Prompt had {token_count} tokens")
-        logging.info(f"Prompt had {token_count} tokens")
-
-        gr.Info("Generating output...")
-        logging.info("Generating output...")
-        output = generate_content(
-            client,
-            prompt,
-            client_configs["model_id"],
-            client_configs["generation_config"],
-        )
-
-    logging.info("Output generated")
+    logger.info("Output generated")
 
     return {
-        generated_content: output,
-        content_row: gr.Row(visible=True),
+        "generated_content": output,
+        "content_row": gr.Row(visible=True),
     }
 
 
-def iterate_fn(prompt, additional_prompt):
+def iterate_fn(prompt: str, additional_prompt: str) -> str:
     """Generates content based on user input and configurations.
 
     Args:
@@ -144,28 +147,38 @@ def iterate_fn(prompt, additional_prompt):
 
     prompt = f"{prompt}\n{additional_prompt}"
 
+    logger.info("Generating output...")
     gr.Info("Generating output...")
-    logging.info("Generating output...")
     output = generate_content(
         client,
         prompt,
         client_configs["model_id"],
         client_configs["generation_config"],
     )
-    logging.info("Output generated")
+    logger.info("Output generated")
 
     return output
 
 
 def parse_repository_fn(
-    repository_path,
-    max_file_size=(10 * 1024 * 1024),
-    include_patterns=None,
-    exclude_patterns=".*",
-):
+    repository_path: str,
+    max_file_size: float = MAX_FILE_SIZE_MB,
+    include_patterns: Optional[str] = None,
+    exclude_patterns: str = ".*",
+) -> Tuple[str, str, str]:
+    """Parses a git repository into text.
+
+    Args:
+        repository_path: Path to the repository
+        max_file_size: Max file size to include in the parsing process.
+        include_patterns: File patterns to include in parsing.
+        exclude_patterns: File patterns to exclude in parsing.
+
+    Returns:
+        A tuple containing a text summary, the directory structure, and the content of each file.
+    """
     max_file_size = max_file_size * (1024 * 1024)  # Convert Bytes to Megabytes
-    gr.Info("Parsing repository")
-    logging.info(
+    logger.info(
         f"""Parsing repository
                  Parsing params:
                     Repository path: {repository_path}
@@ -173,6 +186,7 @@ def parse_repository_fn(
                     Include patterns: {include_patterns}
                     Exclude patterns: {exclude_patterns}"""
     )
+    gr.Info("Parsing repository")
 
     summary, tree, content = ingest(
         source=repository_path,
@@ -181,8 +195,8 @@ def parse_repository_fn(
         exclude_patterns=exclude_patterns,
     )
 
-    logging.info("Parse finished")
-    logging.info(f"Parse summary\n{summary}")
+    logger.info("Parse finished")
+    logger.info(f"Parse summary\n{summary}")
 
     return summary, tree, content
 
@@ -313,5 +327,18 @@ if __name__ == "__main__":
     client = setup_gemini_client()
     # Only using AI Studio for now
     client_configs = app_configs["ai_studio"]
+
+    # Identify the type of configurations we are loading
+    if "ai_studio" in app_configs:
+        client_configs = app_configs["ai_studio"]
+        logger.info("Using AI Studio configuration")
+        gr.Info("Using AI Studio configuration")
+    elif "vertex_ai" in app_configs:
+        client_configs = app_configs["vertex_ai"]
+        logger.info("Using Vertex AI configuration")
+        gr.Info("Using Vertex AI configuration")
+    else:
+        logger.info("Invalid configs")
+        raise gr.Error("Invalid configs")
 
     demo.launch()

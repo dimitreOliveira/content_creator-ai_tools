@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any, Dict, Optional
 
 import yaml
 
@@ -7,14 +8,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def load_config(config_path="configs.yaml"):
+def load_config(config_path: str = "configs.yaml") -> Optional[Dict[str, Any]]:
     """Loads configuration from a YAML file.
 
     Args:
         config_path: Path to the YAML configuration file.
 
     Returns:
-        A dictionary containing the configuration parameters.
+        A dictionary containing the configuration parameters, or None if loading fails.
     """
     try:
         with open(config_path, "r") as file:

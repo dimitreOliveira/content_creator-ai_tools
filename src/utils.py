@@ -1,18 +1,15 @@
-import logging
 import os
+from typing import Any, Dict, Optional
 
 from google import genai
 from google.genai import types
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-
-def setup_gemini_client(api_key=None):
+def setup_gemini_client(api_key: Optional[str] = None) -> genai.Client:
     """Sets up the Gemini API client.
 
     Args:
-        api_key: The API key for Gemini API (optional).
+        api_key: The API key for Gemini API (optional). If not provided, it will look for GEMINI_API_KEY env variable
 
     Returns:
        The Gemini API client object.
@@ -22,7 +19,7 @@ def setup_gemini_client(api_key=None):
     return genai.Client(api_key=api_key)
 
 
-def upload_file(client, file_path):
+def upload_file(client: genai.Client, file_path: str) -> types.File:
     """Uploads a file to the Gemini API.
 
     Args:
@@ -36,7 +33,9 @@ def upload_file(client, file_path):
     return file_upload
 
 
-def count_tokens_with_file(client, prompt, file_upload, model_id):
+def count_tokens_with_file(
+    client: genai.Client, prompt: str, file_upload: types.File, model_id: str
+) -> int:
     """Counts the number of tokens in a prompt including file content.
 
     Args:
@@ -65,7 +64,7 @@ def count_tokens_with_file(client, prompt, file_upload, model_id):
     return response.total_tokens
 
 
-def count_tokens(client, prompt, model_id):
+def count_tokens(client: genai.Client, prompt: str, model_id: str) -> int:
     """Counts the number of tokens in a prompt including file content.
 
     Args:
@@ -85,9 +84,13 @@ def count_tokens(client, prompt, model_id):
 
 
 def generate_content_with_file(
-    client, prompt, file_upload, model_id, generation_config
-):
-    """Generates content using the Gemini API.
+    client: genai.Client,
+    prompt: str,
+    file_upload: types.File,
+    model_id: str,
+    generation_config: Dict[str, Any],
+) -> str:
+    """Generates content using the Gemini API with a file as context.
 
     Args:
         client: The Gemini API client.
@@ -123,7 +126,12 @@ def generate_content_with_file(
     return response.text
 
 
-def generate_content(client, prompt, model_id, generation_config):
+def generate_content(
+    client: genai.Client,
+    prompt: str,
+    model_id: str,
+    generation_config: Dict[str, Any],
+) -> str:
     """Generates content using the Gemini API.
 
     Args:
@@ -149,7 +157,7 @@ def generate_content(client, prompt, model_id, generation_config):
     return response.text
 
 
-def build_prompt(input_type, output_type):
+def build_prompt(input_type: str, output_type: str) -> str:
     """Builds a base prompt based on input and output types.
 
     Args:
