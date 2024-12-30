@@ -1,41 +1,19 @@
-import logging
-from enum import Enum
 from typing import Any, Dict, Optional, Tuple
 
 import gradio as gr
 from dotenv import load_dotenv
-from gitingest import ingest
 
-from common import load_config
-from utils import (
-    build_prompt,
-    count_tokens,
-    count_tokens_with_file,
-    generate_content,
-    generate_content_with_file,
-    setup_gemini_client,
-    upload_file,
-)
+from client.gemini_client import GeminiClient
+from config.config_loader import load_config
+from enums import ContentInputType, ContentOutputType
+from prompts.base_prompts import BASE_README_PROMPT
+from repository_parser import RepositoryParser
+from utils.logger import setup_logger
 
 CONFIG_PATH: str = "configs.yaml"
 MAX_FILE_SIZE_MB: int = 10 * 1024 * 1024
-LOG_LEVEL: int = logging.INFO
 
-logging.basicConfig(level=LOG_LEVEL)
-logger = logging.getLogger(__name__)
-
-
-class ContentInputType(Enum):
-    BLOG_POST = "Blog post"
-    CODE_SCRIPT = "Code"
-
-
-class ContentOutputType(Enum):
-    BLOG_POST = "Blog post"
-    README = "GitHub README.md file"
-    CODE_BASE = "Code base"
-    CODE_IMPROVEMENT = "Code improvement"
-    VIDEO_WALKTHROUGH = "Video walkthrough"
+logger = setup_logger(__name__)
 
 
 def generate_fn(
@@ -71,7 +49,7 @@ def generate_fn(
     if file_input and (parsed_repository_tree or parsed_repository_content):
         raise gr.Error("Provide only a single input (repository or file)")
 
-    prompt = build_prompt(input_type, output_type)
+    prompt = f"Create a {output_type} based on this {input_type} input."
     logger.info(f"Base prompt:\n{prompt}")
 
     output: str = ""  # Initialize output to default empty string
@@ -79,46 +57,25 @@ def generate_fn(
     if parsed_repository_tree and parsed_repository_content:
         prompt = f"{parsed_repository_tree}\n{parsed_repository_content}\n{prompt}\n{additional_prompt}"
 
-        logger.info("Counting prompt token count...")
         gr.Info("Counting prompt token count...")
-        token_count = count_tokens(client, prompt, client_configs["model_id"])
-        logger.info(f"Prompt had {token_count} tokens")
+        token_count = geminiClient.count_tokens(prompt)
         gr.Info(f"Prompt had {token_count} tokens")
 
-        logger.info("Generating output...")
         gr.Info("Generating output...")
-        output = generate_content(
-            client,
-            prompt,
-            client_configs["model_id"],
-            client_configs["generation_config"],
-        )
+        output = geminiClient.generate_content(prompt)
 
     elif file_input:
         prompt = f"{prompt}\n{additional_prompt}"
 
-        logger.info("Uploading file...")
         gr.Info("Uploading file...")
-        file_upload = upload_file(client, file_input.name)  # type: ignore
-        logger.info(f"Uploaded file: {file_upload.uri}")
+        file_upload = geminiClient.upload_file(file_input.name)
 
-        logger.info("Counting prompt token count...")
         gr.Info("Counting prompt token count...")
-        token_count = count_tokens_with_file(
-            client, prompt, file_upload, client_configs["model_id"]
-        )
-        logger.info(f"Prompt had {token_count} tokens")
+        token_count = geminiClient.count_tokens(prompt, file_upload)
         gr.Info(f"Prompt had {token_count} tokens")
 
-        logger.info("Generating output...")
         gr.Info("Generating output...")
-        output = generate_content_with_file(
-            client,
-            prompt,
-            file_upload,
-            client_configs["model_id"],
-            client_configs["generation_config"],
-        )
+        output = geminiClient.generate_content(prompt, file_upload)
 
     logger.info("Output generated")
 
@@ -144,15 +101,12 @@ def iterate_fn(prompt: str, additional_prompt: str) -> str:
 
     prompt = f"{prompt}\n{additional_prompt}"
 
-    logger.info("Generating output...")
+    gr.Info("Counting prompt token count...")
+    token_count = geminiClient.count_tokens(prompt)
+    gr.Info(f"Prompt had {token_count} tokens")
+
     gr.Info("Generating output...")
-    output = generate_content(
-        client,
-        prompt,
-        client_configs["model_id"],
-        client_configs["generation_config"],
-    )
-    logger.info("Output generated")
+    output = geminiClient.generate_content(prompt)
 
     return output
 
@@ -175,27 +129,22 @@ def parse_repository_fn(
         A tuple containing a text summary, the directory structure, and the content of each file.
     """
     max_file_size = max_file_size * (1024 * 1024)  # Convert Bytes to Megabytes
-    logger.info(
-        f"""Parsing repository
-                 Parsing params:
-                    Repository path: {repository_path}
-                    Max file size: {max_file_size}
-                    Include patterns: {include_patterns}
-                    Exclude patterns: {exclude_patterns}"""
-    )
     gr.Info("Parsing repository")
-
-    summary, tree, content = ingest(
-        source=repository_path,
-        max_file_size=max_file_size,
-        include_patterns=include_patterns,
-        exclude_patterns=exclude_patterns,
+    summary, tree, content = repositoryParser.parse_repository(
+        repository_path,
+        max_file_size,
+        include_patterns,
+        exclude_patterns,
     )
-
-    logger.info("Parse finished")
-    logger.info(f"Parse summary\n{summary}")
 
     return summary, tree, content
+
+
+def base_prompt_fn(output_type, prompt):
+    if output_type == ContentOutputType.README.value:
+        return BASE_README_PROMPT.strip()
+    else:
+        return prompt
 
 
 # Gradio app
@@ -255,6 +204,12 @@ with gr.Blocks() as demo:
                         )
 
     with gr.Row():
+        additional_prompt = gr.Textbox(
+            label="Additional prompt information",
+            info="Describe the kind of content that you want to generate",
+        )
+
+    with gr.Row():
         gr.Markdown("## Define the desired inputs and outputs")
 
     with gr.Row():
@@ -268,12 +223,7 @@ with gr.Blocks() as demo:
                 [x.value for x in list(ContentOutputType)],
                 label="What kind of content would you like to create?",
             )
-
-    with gr.Row():
-        additional_prompt = gr.Textbox(
-            label="Additional prompt information",
-            info="Describe the kind of content that you want to generate",
-        )
+            radio_output_type.change(base_prompt_fn, [radio_output_type, additional_prompt], additional_prompt)
 
     with gr.Row(visible=False) as content_row:
         with gr.Column(scale=1):
@@ -320,11 +270,6 @@ if __name__ == "__main__":
     # Load env vars
     load_dotenv()
 
-    # Setup Gemini client
-    client = setup_gemini_client()
-    # Only using AI Studio for now
-    client_configs = app_configs["ai_studio"]
-
     # Identify the type of configurations we are loading
     if "ai_studio" in app_configs:
         client_configs = app_configs["ai_studio"]
@@ -337,5 +282,8 @@ if __name__ == "__main__":
     else:
         logger.info("Invalid configs")
         raise gr.Error("Invalid configs")
+
+    geminiClient = GeminiClient(client_configs)
+    repositoryParser = RepositoryParser()
 
     demo.launch()
