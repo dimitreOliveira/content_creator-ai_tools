@@ -1,4 +1,3 @@
-import logging
 from typing import Optional, Tuple
 
 from gitingest import ingest
@@ -22,12 +21,14 @@ class RepositoryParser:
 
         Args:
             repository_path: Path to the repository.
-            max_file_size: Max file size to include in the parsing process (in megabytes).
+            max_file_size:
+                Max file size to include in the parsing process (in megabytes).
             include_patterns: File patterns to include in parsing.
             exclude_patterns: File patterns to exclude in parsing.
 
         Returns:
-            A tuple containing a text summary, the directory structure, and the content of each file.
+            A tuple containing a text summary, the directory structure,
+                and the content of each file.
         """
         logger.info(
             f"""Parsing repository

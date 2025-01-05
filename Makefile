@@ -8,4 +8,4 @@ lint:
 	isort ./src
 	black ./src
 	flake8 ./src
-	mypy --ignore-missing-imports ./src
+	mypy --ignore-missing-imports --no-namespace-packages ./src

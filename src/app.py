@@ -17,7 +17,8 @@ logger = setup_logger(__name__)
 
 
 def generate_fn(
-    file_input: Optional[gr.File],
+    input_text: Optional[str],
+    input_file: Optional[gr.File],
     parsed_repository_tree: Optional[str],
     parsed_repository_content: Optional[str],
     additional_prompt: str,
@@ -27,8 +28,10 @@ def generate_fn(
     """Generates content based on user input and configurations.
 
     Args:
-        file_input: The file input from the Gradio interface.
-        parsed_repository_tree: GitHub repository directory structure parsed as a txt input.
+        input_text: The text input from the Gradio interface.
+        input_file: The file input from the Gradio interface.
+        parsed_repository_tree:
+            GitHub repository directory structure parsed as a txt input.
         parsed_repository_content: GitHub repository content parsed as a txt input.
         additional_prompt: Additional instructions from the user.
         input_type: The type of the input content.
@@ -43,11 +46,27 @@ def generate_fn(
     if not output_type:
         raise gr.Error("Choose an output type")
 
-    if not file_input and not (parsed_repository_tree and parsed_repository_content):
-        raise gr.Error("Provide an input file (repository or file)")
+    if (
+        (not input_text)
+        and (not input_file)
+        and (not (parsed_repository_tree and parsed_repository_content))
+    ):
+        raise gr.Error("Provide an input file (text, repository or file)")
 
-    if file_input and (parsed_repository_tree or parsed_repository_content):
-        raise gr.Error("Provide only a single input (repository or file)")
+    if (
+        sum(
+            map(
+                bool,
+                [
+                    input_text,
+                    input_file,
+                    (parsed_repository_tree or parsed_repository_content),
+                ],
+            )
+        )
+        > 1
+    ):
+        raise gr.Error("Provide only a single input (text, repository or file)")
 
     prompt = f"Create a {output_type} based on this {input_type} input."
     logger.info(f"Base prompt:\n{prompt}")
@@ -55,7 +74,10 @@ def generate_fn(
     output: str = ""  # Initialize output to default empty string
 
     if parsed_repository_tree and parsed_repository_content:
-        prompt = f"{parsed_repository_tree}\n{parsed_repository_content}\n{prompt}\n{additional_prompt}"
+        prompt = (
+            f"{parsed_repository_tree}\n{parsed_repository_content}\n",
+            f"{prompt}\n{additional_prompt}",
+        )
 
         gr.Info("Counting prompt token count...")
         token_count = geminiClient.count_tokens(prompt)
@@ -64,11 +86,11 @@ def generate_fn(
         gr.Info("Generating output...")
         output = geminiClient.generate_content(prompt)
 
-    elif file_input:
+    elif input_file:
         prompt = f"{prompt}\n{additional_prompt}"
 
         gr.Info("Uploading file...")
-        file_upload = geminiClient.upload_file(file_input.name)
+        file_upload = geminiClient.upload_file(input_file.name)
 
         gr.Info("Counting prompt token count...")
         token_count = geminiClient.count_tokens(prompt, file_upload)
@@ -76,6 +98,16 @@ def generate_fn(
 
         gr.Info("Generating output...")
         output = geminiClient.generate_content(prompt, file_upload)
+
+    elif input_text:
+        prompt = f"{prompt}\n{additional_prompt}\n{input_text}"
+
+        gr.Info("Counting prompt token count...")
+        token_count = geminiClient.count_tokens(prompt)
+        gr.Info(f"Prompt had {token_count} tokens")
+
+        gr.Info("Generating output...")
+        output = geminiClient.generate_content(prompt)
 
     logger.info("Output generated")
 
@@ -112,7 +144,7 @@ def iterate_fn(prompt: str, additional_prompt: str) -> str:
 
 
 def parse_repository_fn(
-    repository_path: str,
+    input_repository_path: str,
     max_file_size: float = MAX_FILE_SIZE_MB,
     include_patterns: Optional[str] = None,
     exclude_patterns: str = ".*",
@@ -120,18 +152,19 @@ def parse_repository_fn(
     """Parses a git repository into text.
 
     Args:
-        repository_path: Path to the repository
+        input_repository_path: Path to the repository
         max_file_size: Max file size to include in the parsing process.
         include_patterns: File patterns to include in parsing.
         exclude_patterns: File patterns to exclude in parsing.
 
     Returns:
-        A tuple containing a text summary, the directory structure, and the content of each file.
+        A tuple containing a text summary, the directory structure,
+            and the content of each file.
     """
     max_file_size = max_file_size * (1024 * 1024)  # Convert Bytes to Megabytes
     gr.Info("Parsing repository")
     summary, tree, content = repositoryParser.parse_repository(
-        repository_path,
+        input_repository_path,
         max_file_size,
         include_patterns,
         exclude_patterns,
@@ -157,8 +190,22 @@ with gr.Blocks() as demo:
             with gr.Column(scale=1):
                 with gr.Row():
                     with gr.Column(scale=1):
-                        repository_path = gr.Textbox(
-                            label="Provide a URL or path to a local repository"
+                        input_text = gr.Textbox(
+                            label="Input option 1: Provide a text content as input",
+                            lines=23,
+                        )
+
+                    with gr.Column(scale=1):
+                        input_file = gr.File(
+                            label="Input option 2: Select a file to upload",
+                            file_count="single",
+                        )
+
+                        input_repository_path = gr.Textbox(
+                            label=(
+                                "Input option 3: ",
+                                "Provide a URL or path to a repository and parse it",
+                            )
                         )
 
                         with gr.Accordion("Parsing params", open=False):
@@ -174,15 +221,18 @@ with gr.Blocks() as demo:
                                 label="Include patterns (e.g.: README.md, src/, *.py)"
                             )
                             exclude_patterns = gr.Textbox(
-                                label="Exclude patterns (e.g.: LICENSE, assets/, *.toml, .*)"
+                                label=(
+                                    "Exclude patterns ",
+                                    "(e.g.: LICENSE, assets/, *.toml, .*)",
+                                )
                             )
 
                         with gr.Accordion("Parsed output", open=False):
-                            summary_txt = gr.Textbox(label="Summary", lines=4)
-                            tree_txt = gr.Textbox(
+                            input_summary_txt = gr.Textbox(label="Summary", lines=4)
+                            input_tree_txt = gr.Textbox(
                                 label="Tree", lines=10, show_copy_button=True
                             )
-                            content_txt = gr.Textbox(
+                            input_content_txt = gr.Textbox(
                                 label="Content", lines=20, show_copy_button=True
                             )
 
@@ -190,17 +240,16 @@ with gr.Blocks() as demo:
                         parse_repository_btn.click(
                             fn=parse_repository_fn,
                             inputs=[
-                                repository_path,
+                                input_repository_path,
                                 max_file_size,
                                 include_patterns,
                                 exclude_patterns,
                             ],
-                            outputs=[summary_txt, tree_txt, content_txt],
-                        )
-
-                    with gr.Column(scale=1):
-                        file_input = gr.File(
-                            label="Select a file to upload", file_count="single"
+                            outputs=[
+                                input_summary_txt,
+                                input_tree_txt,
+                                input_content_txt,
+                            ],
                         )
 
     with gr.Row():
@@ -223,7 +272,11 @@ with gr.Blocks() as demo:
                 [x.value for x in list(ContentOutputType)],
                 label="What kind of content would you like to create?",
             )
-            radio_output_type.change(base_prompt_fn, [radio_output_type, additional_prompt], additional_prompt)
+            radio_output_type.change(
+                base_prompt_fn,
+                [radio_output_type, additional_prompt],
+                additional_prompt,
+            )
 
     with gr.Row(visible=False) as content_row:
         with gr.Column(scale=1):
@@ -251,9 +304,10 @@ with gr.Blocks() as demo:
         generate_content_btn.click(
             fn=generate_fn,
             inputs=[
-                file_input,
-                tree_txt,
-                content_txt,
+                input_text,
+                input_file,
+                input_tree_txt,
+                input_content_txt,
                 additional_prompt,
                 radio_input_type,
                 radio_output_type,
