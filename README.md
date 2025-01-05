@@ -2,138 +2,170 @@
 
 This application provides an AI-powered solution for generating different types of content, such as blog posts, README files, code improvements, and video walkthroughs, based on provided inputs. It can process either local files or GitHub repositories to serve as context for content generation. The purpose of this tool is to streamline the content creation process using the power of AI models.
 
-## How to Use
+The current iteration of this applicaiton leverages Gemini through the [Google AI studio](https://aistudio.google.com/) API to generate content.
 
-This application provides a Gradio interface with two main content generation workflows:
-1.  **File Upload**: Users can upload a file, then specify the input and output content types. An AI model will then generate content according to that input.
-2.  **GitHub Repository**: Users can input a repository path and parse the project's content. An AI model will then generate content using the repository's directory structure and file content as context.
+**Supported input types**
+- Blog post
+- Code
+
+**Supported output types**
+- Blog post
+- GitHub README.md file
+- Code base
+- Code improvement
+- Video walkthrough
+
+## How it works
+
+![](./assets/diagram.jpg)
+
+The application provides a user-friendly interface built with Gradio. You can input a file or a repository path, specify the input and output content types, and provide additional instructions. The application then uses the Gemini AI model to generate the desired content.
+
+## How to use
+
+1. Provide either a file or a Git repository URL/path as input.
+2. Optionally, add specific instructions or context in the "Additional prompt information" field.
+3. Select the type of the input content in the "Input type" dropdown.
+4. Choose the desired output content type from the "What kind of content would you like to create?" dropdown.
+5. Click the "Generate content" button.
+6. The generated content will be displayed in the "Generated content" textbox.
+7. You can further refine the generated content by adding instructions in the "Keep iterate over the content" field and clicking "Iterate over the content".
 
 ## Examples
+
+{add_screenshot}
 
 ### Example 1: Generating a Blog Post from a Code Script
 1.  Select "Code" as the input type.
 2.  Select "Blog post" as the output type.
 3.  Upload a Python script containing code.
 4.  Provide additional instructions such as "Summarize the code and describe its functionality" in the prompt section.
-5.  Click on "Generate content."
+5.  Click on "Generate content".
 
-### Example 2: Creating a README for a GitHub Repository
-1.  Enter the URL or local path of the GitHub repository to parse.
-2.  Click on "Parse GitHub repository" to fetch repository summary, tree structure, and file content.
-3.  Select "Code base" as the input type.
-4.  Select "GitHub README.md file" as the output type.
+{add_screenshot}
+
+### Example 2: Creating a README from a GitHub Repository
+1.  Select "Code base" as the input type.
+2.  Select "GitHub README.md file" as the output type.
+3.  Enter the URL or local path of the GitHub repository to parse.
+4.  Click on "Parse GitHub repository" to fetch repository summary, tree structure, and file content.
 5.  Provide additional instructions such as "Explain how to set up the environment and run the app" in the prompt section.
-6.  Click on "Generate content."
+6.  Click on "Generate content".
+
+{add_screenshot}
+
+### Example 3: Creating a Video Walkthrough from a Blog Post
+1.  Select "Blog post" as the input type.
+2.  Select "Video walkthrough" as the output type.
+3.  Input the blog post into the "Input text field".
+4.  Provide additional instructions such as "The video walkthrough must be engaging and suited for short content" in the prompt section.
+5.  Click on "Generate content".
 
 ## Usage
 
-### Interface Elements
-*   **File Input:** Allows users to upload a file that serves as the basis for the content generation.
-*   **Repository Path:** Allows users to input a path to a repository to parse.
-*   **Parsing Parameters:**
-    *   **Max File Size:** Filters out any files bigger than this size, in MB.
-    *   **Include Patterns:** Includes files matching these patterns (e.g.: `README.md, src/, *.py`).
-    *   **Exclude Patterns:** Excludes files matching these patterns (e.g.: `LICENSE, assets/, *.toml, .*`).
-*   **Parsed Output:**
-    *   **Summary:** Text summary of the parsed repository
-    *   **Tree:** Directory structure of the repository.
-    *   **Content:** Content of all files in the repository.
-*   **Input Type:** Specifies the type of content to process: "Blog post" or "Code".
-*   **Output Type:** Specifies the type of content to generate: "Blog post," "GitHub README.md file", "Code base", "Code improvement," or "Video walkthrough."
-*   **Additional Prompt Information:** Provides a space for users to provide further instructions for the content generation.
-*   **Generated Content:** Output of the AI content generation.
-*   **Iterate over the content:** Option to perform additional iterations over the created content.
+The application can be used to:
 
-### Workflow
-
-1.  **Select Input**: Choose whether to use a local file upload or a GitHub repository.
-2.  **Parse Repository (Optional)**: If using a GitHub repository, input the path and click "Parse GitHub repository".
-3.  **Specify Content Types**: Select the input type and desired output type.
-4.  **Additional Prompt**: Enter any additional instructions to guide the AI model.
-5.  **Generate Content**: Click the "Generate content" button.
-6.  **Review and Iterate**: Review the generated content, and iterate if needed using the "Iterate over the content" section.
+-   Generate documentation for code projects.
+-   Create blog posts or articles based on existing content.
+-   Outline video walkthroughs for software or tutorials.
+-   Improve existing code by suggesting changes and optimizations.
+-   Quickly generate README files for new repositories.
 
 ## Setup
 
-### Prerequisites
-
-*   Python 3.8+
-*   pip
-*   A Google Gemini API key (set as `GEMINI_API_KEY` in your environment variables)
-
-### Installation
-
-1.  Clone the repository:
+1. **Clone the repository:**
     ```bash
-    git clone <repository-url>
-    cd <repository-directory>
+    git clone <repository_url>
+    cd <repository_name>
     ```
-2.  Install the requirements:
+
+2. **Create a virtual environment (recommended):**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Linux/macOS
+    venv\Scripts\activate  # On Windows
+    ```
+
+3. **Install the dependencies:**
     ```bash
     make build
     ```
-3.  Copy `configs.yaml` to your working directory.
-
-### Running the Application
-   Run the application using the following command:
+    Alternatively, you can use `pip`:
     ```bash
-    make app
+    pip install -r requirements.txt
     ```
 
-## App Workflow
+4. **Set up the Gemini API key:**
+    -   Obtain an API key from Google AI Studio.
+    -   Set the `GEMINI_API_KEY` environment variable with your API key. You can do this by adding the following line to your `.bashrc`, `.zshrc`, or similar shell configuration file:
+        ```bash
+        export GEMINI_API_KEY="YOUR_API_KEY"
+        ```
+        Or, you can create a `.env` file in the root directory with the following content:
+        ```
+        GEMINI_API_KEY=YOUR_API_KEY
+        ```
 
-The application workflow is designed as follows:
+## App workflow
 
-1.  **Configuration Loading**: Loads configurations from the `configs.yaml` file.
-2.  **Environment Setup**: Loads environment variables from the `.env` file using python-dotenv.
-3.  **Client Initialization**:
-    *   Initializes the Gemini client using the loaded API key and settings in `config.yaml`.
-    *   Initializes the repository parser.
-4.  **Gradio Interface**:
-    *   Launches the Gradio interface with the specified input and output fields.
-    *   Provides functionalities to parse repositories and generate content using the AI model based on user input.
-5.  **Content Generation**:
-    *   The `generate_fn` function is triggered when the user clicks on "Generate content," performing the following steps:
-        *   Checks input validations.
-        *   Builds a prompt using the provided content.
-        *   Uploads files to the Gemini API.
-        *   Counts tokens.
-        *   Generates content using the AI model.
-        *   Returns the output to the Gradio interface.
-6.  **Content Iteration**:
-    *   The `iterate_fn` function is triggered when the user clicks on "Iterate over the content," performing the following steps:
-        *   Checks input validations.
-        *   Builds a prompt using the generated text and the user input.
-        *   Counts tokens.
-        *   Generates content using the AI model.
-        *   Returns the output to the Gradio interface.
-7. **Repository Parsing**:
-    * The `parse_repository_fn` function is triggered when the user clicks on "Parse GitHub repository," performing the following steps:
-        * Parses the directory tree, the summary and the content from the given repository.
-        * Returns the parsed output to the Gradio interface.
+1. The user provides input, either a file or a repository path.
+2. If a repository path is provided, the application uses the `repository_parser.py` to parse the repository structure and content.
+3. The user selects the input and output content types and provides any additional instructions.
+4. The application constructs a prompt based on the input, selected types, and additional instructions.
+5. The prompt is sent to the Google Gemini API via the `gemini_client.py`.
+6. The Gemini API generates the content based on the prompt.
+7. The generated content is displayed to the user.
+8. The user can iterate on the generated content by providing further instructions.
 
+## Configs
 
-## Configurations
+The application's behavior can be configured using the `configs.yaml` file.
 
-### `configs.yaml`
-The `configs.yaml` file contains the following configuration parameters:
+```yaml
+ai_studio:
+  model_id: gemini-2.0-flash-exp
+  generation_config:
+    temperature: 1
+    top_p: 0.95
+    top_k: 40
+    max_output_tokens: 8192
+content_copy
+download
+Use code with caution.
+Markdown
 
-*   **`ai_studio` or `vertex_ai`**: Contains AI provider specific configurations.
-    *   **`model_id`**: Specifies the model to use (e.g., `gemini-2.0-flash-exp`).
-    *   **`generation_config`**: Contains generation settings, such as `temperature`, `top_p`, `top_k`, and `max_output_tokens`.
+ai_studio: Contains configurations specific to the AI Studio/Gemini client.
 
-## Makefile Commands
+model_id: Specifies the Gemini model to be used (e.g., gemini-2.0-flash-exp).
 
-The Makefile provides shortcuts for common operations:
+generation_config: Parameters to control the content generation process.
 
-*   **`make app`**: Launches the Gradio app.
-*   **`make build`**: Installs the required Python packages from `requirements.txt`.
-*   **`make lint`**: Runs code formatting and linting tools (`isort`, `black`, `flake8`, `mypy`) to ensure code quality.
+temperature: Controls the randomness of the output. Higher values (e.g., 1) make the output more random, while lower values (e.g., 0) make it more deterministic.
 
-## Disclaimers
+top_p: Nucleus sampling. Considers the smallest set of most probable tokens whose probabilities sum to at least top_p.
 
-*   The generated content may not always be perfect and might require manual review.
-*   Please ensure you have the necessary permissions to use the provided API keys.
-*   Token limits may apply when generating content.
-*   [Add placeholder for architecture diagram here]
-*   [Add placeholder for screenshots here]
+top_k: Considers the top_k most likely tokens.
+
+max_output_tokens: The maximum number of tokens the model can generate in the output.
+
+Makefile Commands
+
+The Makefile provides convenient commands for common tasks:
+
+make app: Runs the Gradio application using gradio src/app.py.
+
+make build: Installs the required Python dependencies from requirements.txt using pip install -r requirements.txt.
+
+make lint: Runs linting and formatting tools (isort, black, flake8, mypy) on the src directory to ensure code quality and consistency.
+
+Disclaimers
+
+The quality of the generated content depends on the input provided and the capabilities of the underlying AI model.
+
+Ensure you have the necessary permissions and comply with the terms of service for the Gemini API.
+
+The application is for informational and creative purposes. Always review and verify the generated content before using it.
+
+content_copy
+download
+Use code with caution.
