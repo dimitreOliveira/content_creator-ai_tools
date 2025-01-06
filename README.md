@@ -186,3 +186,12 @@ make lint
 - The quality of the generated content depends on the input provided and the capabilities of the underlying AI model.
 - Ensure you have the necessary permissions and comply with the terms of service for the underlying AI model.
 - The application is for informational and creative purposes. Always review and verify the generated content before using it.
+
+## TODO
+- Add support to change the base prompt
+- Add support to add multiple files to the prompt in any order (e.g. [file, text], [file, text, file, file], etc)
+- Add support for Vertex API
+- Add support for local open-source models
+- Add support to TTS audio generation
+- Add support to image generation
+- Add support to video generation
