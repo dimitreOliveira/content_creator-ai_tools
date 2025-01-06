@@ -21,29 +21,121 @@ The current iteration of this applicaiton leverages Gemini through the [Google A
 
 The application provides a user-friendly interface built with Gradio. You can input a file or a repository path, specify the input and output content types, and provide additional instructions. The application then uses the Gemini AI model to generate the desired content.
 
-1. Provide one of the options below as input a input.
-    1. Providing a File: Upload a single file using the "Select a file to upload" section.
-    2. Providing a GitHub Repository: Enter the URL or local path of a Git repository in the "Provide a URL or path to a local repository" textbox.
-2. If a repository link is provided, the application parses the repository structure, summarize its contents, and extract individual file contents.
-3. Optionally, add specific instructions or context in the "Additional prompt information" field.
-4. Select the type of the input content in the "Input type" dropdown.
-5. Choose the desired output content type from the "What kind of content would you like to create?" dropdown.
-6. Click the "Generate content" button.
-7. The generated content will be displayed in the "Generated content" textbox.
-8. You can further refine the generated content by adding instructions in the "Keep iterate over the content" field and clicking "Iterate over the content".
+1. Select the type of the input content in the "Input type" dropdown.
+2. Choose the desired output content type from the "What kind of content would you like to create?" dropdown.
+3. Provide an input of one of the supported options below.
+    1. Providing a GitHub Repository: Enter the URL or local path of a Git repository in the "Provide a URL or path to a local repository" textbox.
+    2. Providing a Text: Enter a text at the "Provide a text content as input" textbox.
+    3. Providing a File: Upload a single file using the "Select a file to upload" section.
+4. If a repository is provided, optionally add parameters on how to parse the repository.
+5. If a repository is provided, the application parses the repository structure, summarize its contents, and extract individual file contents.
+6. Optionally, add specific instructions or context in the "Additional prompt information" field.
+7. Click the "Generate content" button.
+8. The generated content will be displayed in the "Generated content" textbox.
+9. You can further refine the generated content by adding instructions in the "Keep iterate over the content" field and clicking "Iterate over the content".
 
-## Usage
+## Setup
 
-### Workflow
+### Prerequisites
 
-1.  **Select Input**: Choose whether to use a local file upload or a GitHub repository.
-2.  **Parse Repository (Optional)**: If using a GitHub repository, input the path and click "Parse GitHub repository".
-3.  **Specify Content Types**: Select the input type and desired output type.
-4.  **Additional Prompt**: Enter any additional instructions to guide the AI model.
-5.  **Generate Content**: Click the "Generate content" button.
-6.  **Review and Iterate**: Review the generated content, and iterate if needed using the "Iterate over the content" section.
+-  A [Google AI studio](https://aistudio.google.com/) API key (set as `GEMINI_API_KEY` in your environment variables)
 
-### Interface Elements
+1. **Clone the repository:**
+```bash
+git clone https://github.com/dimitreOliveira/creator-ai_tools.git
+cd creator-ai_tools
+```
+
+2. **Create a virtual environment (recommended):**
+```bash
+python -m venv creator_ai_tools
+source creator_ai_tools/bin/activate  # On Linux/macOS
+creator_ai_tools\Scripts\activate  # On Windows
+```
+
+3. **Install the dependencies:**
+```bash
+make build
+```
+Alternatively, you can use `pip`:
+```bash
+pip install -r requirements.txt
+```
+
+4. **Set up the Gemini API key:**
+-   Obtain an API key from [Google AI studio](https://aistudio.google.com/).
+-   Set the `GEMINI_API_KEY` environment variable with your API key. You can do this by adding the following line to your `.bashrc`, `.zshrc`, or similar shell configuration file:
+```bash
+export GEMINI_API_KEY="YOUR_API_KEY"
+```
+Or, you can create a `.env` file in the root directory with the following content (recommended):
+```
+GEMINI_API_KEY=YOUR_API_KEY
+```
+If using a .env file, ensure you have python-dotenv installed (it should be if you ran make build).
+
+## Usage (Makefile Commands)
+
+The Makefile provides convenient commands for common tasks:
+
+- Runs the Gradio application, then you can access in your web browser.
+```bash
+make app
+```
+
+- Installs the required dependencies to run the app.
+```bash
+make build
+```
+
+- Runs linting and formatting tools (isort, black, flake8, mypy) to ensure code quality and consistency.
+```bash
+make lint
+```
+
+## Examples
+
+### Example 1: Generating a Blog Post from a Code Script
+1.  Select "Code" as the input type.
+2.  Select "Blog post" as the output type.
+3.  Upload a Python script containing code.
+4.  Provide additional instructions such as "Summarize the code and describe its functionality" in the prompt section.
+5.  Click on "Generate content".
+
+![](./assets/example-file_input.png)
+
+### Example 2: Creating a README from a GitHub Repository
+1.  Select "Code base" as the input type.
+2.  Select "GitHub README.md file" as the output type.
+3.  Enter the URL or local path of the GitHub repository to parse.
+4.  Click on "Parse GitHub repository" to fetch repository summary, tree structure, and file content.
+5.  Provide additional instructions such as "Explain how to set up the environment and run the app" in the prompt section.
+6.  Click on "Generate content".
+
+![](./assets/example-repository_input.png)
+
+### Example 3: Creating a Video Walkthrough from a Blog Post
+1.  Select "Blog post" as the input type.
+2.  Select "Video walkthrough" as the output type.
+3.  Input the blog post into the "Input text field".
+4.  Provide additional instructions such as "The video walkthrough must be engaging and suited for short content" in the prompt section.
+5.  Click on "Generate content".
+
+![](./assets/example-text_input.png)
+
+## App workflow
+
+1. The user provides input, either a file or a repository path.
+2. If a repository path is provided, the application uses the `repository_parser.py` to parse the repository structure and content.
+3. The user selects the input and output content types and provides any additional instructions.
+4. The application constructs a prompt based on the input, selected types, and additional instructions.
+5. The prompt is sent to the Google Gemini API via the `gemini_client.py`.
+6. The Gemini API generates the content based on the prompt.
+7. The generated content is displayed to the user.
+8. The user can iterate on the generated content by providing further instructions.
+
+
+<!-- ### Interface Elements
 *   **File Input:** Allows users to upload a file that serves as the basis for the content generation.
 *   **Repository Path:** Allows users to input a path to a repository to parse.
 *   **Parsing Parameters:**
@@ -58,109 +150,7 @@ The application provides a user-friendly interface built with Gradio. You can in
 *   **Output Type:** Specifies the type of content to generate: "Blog post," "GitHub README.md file", "Code base", "Code improvement," or "Video walkthrough."
 *   **Additional Prompt Information:** Provides a space for users to provide further instructions for the content generation.
 *   **Generated Content:** Output of the AI content generation.
-*   **Iterate over the content:** Option to perform additional iterations over the created content.
-
-### Setup
-
-#### Prerequisites
-
-*   Python 3.8+
-*   pip
-*   A Google Gemini API key (set as `GEMINI_API_KEY` in your environment variables)
-
-1. **Clone the repository:**
-```bash
-git clone <repository_url>
-cd <repository_name>
-```
-
-2. **Create a virtual environment (recommended):**
-```bash
-python -m venv venv
-source venv/bin/activate  # On Linux/macOS
-venv\Scripts\activate  # On Windows
-```
-
-3. **Install the dependencies:**
-```bash
-make build
-```
-Alternatively, you can use `pip`:
-```bash
-pip install -r requirements.txt
-```
-
-4. **Set up the Gemini API key:**
--   Obtain an API key from Google AI Studio.
--   Set the `GEMINI_API_KEY` environment variable with your API key. You can do this by adding the following line to your `.bashrc`, `.zshrc`, or similar shell configuration file:
-```bash
-export GEMINI_API_KEY="YOUR_API_KEY"
-```
-Or, you can create a `.env` file in the root directory with the following content:
-```
-GEMINI_API_KEY=YOUR_API_KEY
-```
-If using a .env file, ensure you have python-dotenv installed (it should be if you ran make build).
-
-### Makefile Commands
-
-The Makefile provides convenient commands for common tasks:
-
-```bash
-make app
-```
-Runs the Gradio application, then you can access in your web browser.
-
-```bash
-make build
-```
-Installs the required dependencies to run the app.
-
-```bash
-make lint
-```
-Runs linting and formatting tools (isort, black, flake8, mypy) to ensure code quality and consistency.
-
-## Examples
-
-{add_screenshot}
-
-### Example 1: Generating a Blog Post from a Code Script
-1.  Select "Code" as the input type.
-2.  Select "Blog post" as the output type.
-3.  Upload a Python script containing code.
-4.  Provide additional instructions such as "Summarize the code and describe its functionality" in the prompt section.
-5.  Click on "Generate content".
-
-{add_screenshot}
-
-### Example 2: Creating a README from a GitHub Repository
-1.  Select "Code base" as the input type.
-2.  Select "GitHub README.md file" as the output type.
-3.  Enter the URL or local path of the GitHub repository to parse.
-4.  Click on "Parse GitHub repository" to fetch repository summary, tree structure, and file content.
-5.  Provide additional instructions such as "Explain how to set up the environment and run the app" in the prompt section.
-6.  Click on "Generate content".
-
-{add_screenshot}
-
-### Example 3: Creating a Video Walkthrough from a Blog Post
-1.  Select "Blog post" as the input type.
-2.  Select "Video walkthrough" as the output type.
-3.  Input the blog post into the "Input text field".
-4.  Provide additional instructions such as "The video walkthrough must be engaging and suited for short content" in the prompt section.
-5.  Click on "Generate content".
-
-## App workflow
-
-1. The user provides input, either a file or a repository path.
-2. If a repository path is provided, the application uses the `repository_parser.py` to parse the repository structure and content.
-3. The user selects the input and output content types and provides any additional instructions.
-4. The application constructs a prompt based on the input, selected types, and additional instructions.
-5. The prompt is sent to the Google Gemini API via the `gemini_client.py`.
-6. The Gemini API generates the content based on the prompt.
-7. The generated content is displayed to the user.
-8. The user can iterate on the generated content by providing further instructions.
+*   **Iterate over the content:** Option to perform additional iterations over the created content. -->
 
 ## Configs
 
