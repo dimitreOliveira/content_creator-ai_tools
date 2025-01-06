@@ -1,4 +1,4 @@
-# Creator AI Tools
+# Content Creator AI Tools
 
 This application provides an AI-powered solution for generating different types of content, such as blog posts, README files, code improvements, and video walkthroughs, based on provided inputs. It can process either local files or GitHub repositories to serve as context for content generation. The purpose of this tool is to streamline the content creation process using the power of AI models.
 
@@ -42,15 +42,15 @@ The application provides a user-friendly interface built with Gradio. You can in
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/dimitreOliveira/creator-ai_tools.git
-cd creator-ai_tools
+git clone https://github.com/dimitreOliveira/content_creator-ai_tools.git
+cd content_creator-ai_tools
 ```
 
 2. **Create a virtual environment (recommended):**
 ```bash
-python -m venv creator_ai_tools
-source creator_ai_tools/bin/activate  # On Linux/macOS
-creator_ai_tools\Scripts\activate  # On Windows
+python -m venv content_creator_ai_tools
+source content_creator_ai_tools/bin/activate  # On Linux/macOS
+content_creator_ai_tools\Scripts\activate  # On Windows
 ```
 
 3. **Install the dependencies:**
