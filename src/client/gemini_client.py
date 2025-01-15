@@ -55,16 +55,19 @@ class GeminiClient(BaseClient):
         Returns:
             The total number of tokens.
         """
+
         contents = [prompt]
 
         if file_upload:
-            contents += types.Content(
-                parts=[
-                    types.Part.from_uri(
-                        file_uri=file_upload.uri, mime_type=file_upload.mime_type
-                    )
-                ]
-            )
+            contents = [
+                types.Content(
+                    parts=[
+                        types.Part.from_uri(
+                            file_uri=file_upload.uri, mime_type=file_upload.mime_type
+                        )
+                    ]
+                )
+            ] + contents
 
         response = self.client.models.count_tokens(
             model=self.configs["model_id"], contents=contents
@@ -90,14 +93,16 @@ class GeminiClient(BaseClient):
         contents = [prompt]
 
         if file_upload:
-            contents += types.Content(
-                role="user",
-                parts=[
-                    types.Part.from_uri(
-                        file_uri=file_upload.uri, mime_type=file_upload.mime_type
-                    )
-                ],
-            )
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_uri(
+                            file_uri=file_upload.uri, mime_type=file_upload.mime_type
+                        )
+                    ],
+                )
+            ] + contents
 
         response = self.client.models.generate_content(
             model=self.configs["model_id"],
@@ -111,5 +116,6 @@ class GeminiClient(BaseClient):
             ),
             contents=contents,
         )
+        logger.info(f"Text prompt:\n{prompt}")
         logger.info("Content generated")
         return response.text
