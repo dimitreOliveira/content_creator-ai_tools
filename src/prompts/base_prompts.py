@@ -11,3 +11,10 @@ Refactor this code by fixing any existing bug or by adding any relevant performa
 Add documentation and typing to all the relevant places.
 Make sure that the code uses the best practices.
 """
+
+BASE_CODE_BASE_PROMPT = """
+The code base must be object-oriented and make sure that the code uses the best practices.
+Whenever necessary split the code into different files.
+Create a `configs.json` file with all the necessary configuration parameters to run the project.
+Create a `requirements.txt` file with all necessary dependencies.
+"""

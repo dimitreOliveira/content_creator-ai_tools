@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from client.gemini_client import GeminiClient
 from config.config_loader import load_config
 from enums import ContentInputType, ContentOutputType
-from prompts.base_prompts import BASE_CODE_IMPROVEMENT_PROMPT, BASE_README_PROMPT
+from prompts.base_prompts import BASE_CODE_IMPROVEMENT_PROMPT, BASE_README_PROMPT, BASE_CODE_BASE_PROMPT
 from repository_parser import RepositoryParser
 from utils.logger import setup_logger
 
@@ -178,6 +178,8 @@ def base_prompt_fn(output_type, prompt):
         return BASE_README_PROMPT.strip()
     elif output_type == ContentOutputType.CODE_IMPROVEMENT.value:
         return BASE_CODE_IMPROVEMENT_PROMPT.strip()
+    elif output_type == ContentOutputType.CODE_BASE.value:
+        return BASE_CODE_BASE_PROMPT.strip()
     else:
         return prompt
 
