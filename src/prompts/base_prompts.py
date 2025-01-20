@@ -10,6 +10,7 @@ DEFAULT_CODE_IMPROVEMENT_PROMPT = """
 Refactor this code by fixing any existing bug or by adding any relevant performance update.
 Add documentation and typing to all the relevant places.
 Make sure that the code uses the best practices.
+Only output the actual code not the code diffs.
 """
 
 DEFAULT_CODE_BASE_PROMPT = """

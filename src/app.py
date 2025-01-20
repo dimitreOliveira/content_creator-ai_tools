@@ -195,10 +195,8 @@ def show_markdown_fn(content, btn):
     if btn == "Show to markdown version":
         btn_text = "Hide to markdown version"
         markdown = gr.Markdown(
-            label="Generated content (markdown)",
-            show_copy_button=True,
-            visible=True,
             value=content,
+            visible=True,
         )
     else:
         if not content:
@@ -206,10 +204,7 @@ def show_markdown_fn(content, btn):
         btn_text = "Show to markdown version"
         markdown = gr.Markdown(visible=False)
 
-    return {
-        generated_content_markdown: markdown,
-        show_markdown_btn: btn_text,
-    }
+    return [markdown, btn_text]
 
 
 # Gradio app
@@ -318,10 +313,7 @@ with gr.Blocks() as demo:
                 show_copy_button=True,
             )
 
-            generated_content_markdown = gr.Markdown(
-                label="Generated content (markdown)",
-                show_copy_button=True,
-            )
+            generated_content_markdown = gr.Markdown(visible=False)
 
             additional_steps = gr.Textbox(
                 label="Keep iterate over the content",
@@ -376,16 +368,16 @@ if __name__ == "__main__":
     if "ai_studio" in app_configs:
         client_configs = app_configs["ai_studio"]
         logger.info("Using AI Studio configuration")
-        gr.Info("Using AI Studio configuration")
     elif "vertex_ai" in app_configs:
         client_configs = app_configs["vertex_ai"]
         logger.info("Using Vertex AI configuration")
-        gr.Info("Using Vertex AI configuration")
     else:
-        logger.info("Invalid configs")
         raise gr.Error("Invalid configs")
+
+    if app_configs["generate_public_url"]:
+        logger.info("App generated a public shareable link, check logs for the URL")
 
     geminiClient = GeminiClient(client_configs)
     repositoryParser = RepositoryParser()
 
-    demo.launch()
+    demo.launch(share=app_configs["generate_public_url"])

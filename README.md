@@ -134,29 +134,12 @@ make lint
 7. The generated content is displayed to the user.
 8. The user can iterate on the generated content by providing further instructions.
 
-
-<!-- ### Interface Elements
-*   **File Input:** Allows users to upload a file that serves as the basis for the content generation.
-*   **Repository Path:** Allows users to input a path to a repository to parse.
-*   **Parsing Parameters:**
-    *   **Max File Size:** Filters out any files bigger than this size, in MB.
-    *   **Include Patterns:** Includes files matching these patterns (e.g.: `README.md, src/, *.py`).
-    *   **Exclude Patterns:** Excludes files matching these patterns (e.g.: `LICENSE, assets/, *.toml, .*`).
-*   **Parsed Output:**
-    *   **Summary:** Text summary of the parsed repository
-    *   **Tree:** Directory structure of the repository.
-    *   **Content:** Content of all files in the repository.
-*   **Input Type:** Specifies the type of content to process: "Blog post" or "Code".
-*   **Output Type:** Specifies the type of content to generate: "Blog post," "GitHub README.md file", "Code base", "Code improvement," or "Video walkthrough."
-*   **Additional Prompt Information:** Provides a space for users to provide further instructions for the content generation.
-*   **Generated Content:** Output of the AI content generation.
-*   **Iterate over the content:** Option to perform additional iterations over the created content. -->
-
 ## Configs
 
 The application's behavior can be configured using the `configs.yaml` file.
 
 ```yaml
+generate_public_url: true
 ai_studio:
   model_id: gemini-2.0-flash-exp
   generation_config:
@@ -165,6 +148,7 @@ ai_studio:
     top_k: 40
     max_output_tokens: 8192
 ```
+- **generate_public_url:** If the APP will generate a public shareable link, check logs for the URL (Gradio public URLs expires after 72 hours).
 - **ai_studio:** Contains configurations specific to the AI Studio/Gemini client.
     - **model_id:** Specifies the Gemini model to be used (e.g., gemini-2.0-flash-exp).
     - **generation_config:** Parameters to control the content generation process.
@@ -187,7 +171,7 @@ make lint
 - Ensure you have the necessary permissions and comply with the terms of service for the underlying AI model.
 - The application is for informational and creative purposes. Always review and verify the generated content before using it.
 
-## TODO
+## TODO (not in any particular order)
 - Add support to add multiple files to the prompt in any order (e.g. [file, text], [file, text, file, file], etc)
 - Add support for Vertex API
 - Add support for local open-source models
@@ -196,4 +180,3 @@ make lint
     - create a set X of optional illustrations for content
 - Add support to video generation
     - create a set X of optional videos for content
-- Generate public link
