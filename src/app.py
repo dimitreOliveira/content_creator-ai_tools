@@ -6,7 +6,12 @@ from dotenv import load_dotenv
 from client.gemini_client import GeminiClient
 from config.config_loader import load_config
 from enums import ContentInputType, ContentOutputType
-from prompts.base_prompts import BASE_CODE_IMPROVEMENT_PROMPT, BASE_README_PROMPT, BASE_CODE_BASE_PROMPT
+from prompts.base_prompts import (
+    DEFAULT_BLOG_POST_PROMPT,
+    DEFAULT_CODE_BASE_PROMPT,
+    DEFAULT_CODE_IMPROVEMENT_PROMPT,
+    DEFAULT_README_PROMPT,
+)
 from repository_parser import RepositoryParser
 from utils.logger import setup_logger
 
@@ -175,13 +180,36 @@ def parse_repository_fn(
 
 def base_prompt_fn(output_type, prompt):
     if output_type == ContentOutputType.README.value:
-        return BASE_README_PROMPT.strip()
+        return DEFAULT_README_PROMPT.strip()
     elif output_type == ContentOutputType.CODE_IMPROVEMENT.value:
-        return BASE_CODE_IMPROVEMENT_PROMPT.strip()
+        return DEFAULT_CODE_IMPROVEMENT_PROMPT.strip()
     elif output_type == ContentOutputType.CODE_BASE.value:
-        return BASE_CODE_BASE_PROMPT.strip()
+        return DEFAULT_CODE_BASE_PROMPT.strip()
+    elif output_type == ContentOutputType.BLOG_POST.value:
+        return DEFAULT_BLOG_POST_PROMPT.strip()
     else:
         return prompt
+
+
+def show_markdown_fn(content, btn):
+    if btn == "Show to markdown version":
+        btn_text = "Hide to markdown version"
+        markdown = gr.Markdown(
+            label="Generated content (markdown)",
+            show_copy_button=True,
+            visible=True,
+            value=content,
+        )
+    else:
+        if not content:
+            gr.Info("Generated content is empty")
+        btn_text = "Show to markdown version"
+        markdown = gr.Markdown(visible=False)
+
+    return {
+        generated_content_markdown: markdown,
+        show_markdown_btn: btn_text,
+    }
 
 
 # Gradio app
@@ -285,7 +313,14 @@ with gr.Blocks() as demo:
     with gr.Row(visible=False) as content_row:
         with gr.Column(scale=1):
             generated_content = gr.Textbox(
-                label="Generated content", interactive=True, show_copy_button=True
+                label="Generated content",
+                interactive=True,
+                show_copy_button=True,
+            )
+
+            generated_content_markdown = gr.Markdown(
+                label="Generated content (markdown)",
+                show_copy_button=True,
             )
 
             additional_steps = gr.Textbox(
@@ -304,20 +339,29 @@ with gr.Blocks() as demo:
             )
 
     with gr.Row():
-        generate_content_btn = gr.Button("Generate content")
-        generate_content_btn.click(
-            fn=generate_fn,
-            inputs=[
-                input_text,
-                input_file,
-                input_tree_txt,
-                input_content_txt,
-                additional_prompt,
-                radio_input_type,
-                radio_output_type,
-            ],
-            outputs=[generated_content, content_row],
-        )
+        with gr.Column(scale=5):
+            generate_content_btn = gr.Button("Generate content")
+            generate_content_btn.click(
+                fn=generate_fn,
+                inputs=[
+                    input_text,
+                    input_file,
+                    input_tree_txt,
+                    input_content_txt,
+                    additional_prompt,
+                    radio_input_type,
+                    radio_output_type,
+                ],
+                outputs=[generated_content, content_row],
+            )
+
+        with gr.Column(scale=1):
+            show_markdown_btn = gr.Button("Show to markdown version")
+            show_markdown_btn.click(
+                fn=show_markdown_fn,
+                inputs=[generated_content, show_markdown_btn],
+                outputs=[generated_content_markdown, show_markdown_btn],
+            )
 
 if __name__ == "__main__":
     # Load configurations

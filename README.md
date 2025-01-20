@@ -188,10 +188,12 @@ make lint
 - The application is for informational and creative purposes. Always review and verify the generated content before using it.
 
 ## TODO
-- Add support to change the base prompt
 - Add support to add multiple files to the prompt in any order (e.g. [file, text], [file, text, file, file], etc)
 - Add support for Vertex API
 - Add support for local open-source models
 - Add support to TTS audio generation
 - Add support to image generation
+    - create a set X of optional illustrations for content
 - Add support to video generation
+    - create a set X of optional videos for content
+- Generate public link
