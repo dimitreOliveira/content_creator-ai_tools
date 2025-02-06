@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Tuple
 import gradio as gr
 from dotenv import load_dotenv
 
-from client.gemini_client import GeminiClient
+from client.gemini_client import AIStudioGeminiClient, VertexAIGeminiClient
 from config.config_loader import load_config
 from enums import ContentInputType, ContentOutputType
 from prompts.base_prompts import (
@@ -365,11 +365,14 @@ if __name__ == "__main__":
     load_dotenv()
 
     # Identify the type of configurations we are loading
-    if "ai_studio" in app_configs:
-        client_configs = app_configs["ai_studio"]
+    if app_configs['llm_model_configs']['provider'] == "ai_studio":
+        geminiClient = AIStudioGeminiClient(app_configs['llm_model_configs'])
         logger.info("Using AI Studio configuration")
-    elif "vertex_ai" in app_configs:
-        client_configs = app_configs["vertex_ai"]
+    elif app_configs['llm_model_configs']['provider'] == "vertex_ai":
+        geminiClient = VertexAIGeminiClient(
+            app_configs['llm_model_configs'],
+            app_configs['vertex_ai'],
+        )
         logger.info("Using Vertex AI configuration")
     else:
         raise gr.Error("Invalid configs")
@@ -377,7 +380,6 @@ if __name__ == "__main__":
     if app_configs["generate_public_url"]:
         logger.info("App generated a public shareable link, check logs for the URL")
 
-    geminiClient = GeminiClient(client_configs)
     repositoryParser = RepositoryParser()
 
     demo.launch(share=app_configs["generate_public_url"])
