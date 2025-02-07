@@ -11,6 +11,7 @@ DEFAULT_CODE_IMPROVEMENT_PROMPT = (
     "adding any relevant performance update.\n"
     "Add documentation and typing to all the relevant places.\n"
     "Make sure that the code uses the best practices.\n"
+    "Outline with comments in the code the modification made.\n"
     "Only output the actual code not the code diffs."
 )
 

@@ -167,7 +167,7 @@ class VertexAIGeminiClient(BaseGeminiClient):
         """
 
         logger.info("Building prompt content")
-        contents = [prompt]
+        contents: list[str | types.Part] = [prompt]
 
         if file_upload:
             contents = [file_upload, prompt]
@@ -187,7 +187,19 @@ class VertexAIGeminiClient(BaseGeminiClient):
 
         logger.info(f"Processing file '{file_path}'")
         file_extension = file_path.split(".")[-1]
-        file_content = open(file_path, "rb").read()
+
+        try:
+            with open(file_path, "rb") as f:
+                file_content = f.read()
+        except FileNotFoundError:
+            error_msg = f"File not found: {file_path}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        except Exception as e:
+            error_msg = f"Error reading file {file_path}: {e}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
         if file_extension in ["txt", "md"]:
             file = types.Part.from_text(file_content.decode())
         elif file_extension in ["pdf"]:
@@ -195,18 +207,18 @@ class VertexAIGeminiClient(BaseGeminiClient):
         elif file_extension in ["py"]:
             file = types.Part.from_bytes(file_content, mime_type="text/x-python-script")
         else:
-            logger.info(
-                "File extension not supported by Vertex AI, "
-                "currently only supported (.txt, .md, .pdf, .py)."
+            # Improved error message to suggest converting files
+            error_msg = (
+                f"File extension '{file_extension}' not supported by Vertex AI. "
+                f"Currently supported extensions: .txt, .md, .pdf, .py"
+                f"Consider converting the file to a supported format."
             )
-            raise ValueError(
-                "File extension not supported by Vertex AI, "
-                "currently only supported (.txt, .md, .pdf, .py)."
-            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         return file
 
-    def upload_file(self, file_path: str) -> types.File:
+    def upload_file(self, file_path: str) -> types.Part:  # Changed return type
         """Uploads a file to the Gemini API.
 
         Args:

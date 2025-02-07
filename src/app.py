@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import gradio as gr
 from dotenv import load_dotenv
@@ -16,20 +16,20 @@ from repository_parser import RepositoryParser
 from utils.logger import setup_logger
 
 CONFIG_PATH: str = "configs.yaml"
-MAX_FILE_SIZE_MB: int = 10 * 1024 * 1024
+MAX_FILE_SIZE_MB: float = 10.0
 
 logger = setup_logger(__name__)
 
 
 def generate_fn(
     input_text: Optional[str],
-    input_file: Optional[gr.File],
+    input_file: Optional[gr.FileData],
     parsed_repository_tree: Optional[str],
     parsed_repository_content: Optional[str],
     additional_prompt: str,
     input_type: Optional[str],
     output_type: Optional[str],
-) -> list[str, Any]:
+) -> Tuple[str, Any]:
     """Generates content based on user input and configurations.
 
     Args:
@@ -160,7 +160,7 @@ def parse_repository_fn(
 
     Args:
         input_repository_path: Path to the repository
-        max_file_size: Max file size to include in the parsing process.
+        max_file_size: Max file size to include in the parsing process (in MB).
         include_patterns: File patterns to include in parsing.
         exclude_patterns: File patterns to exclude in parsing.
 
@@ -168,11 +168,11 @@ def parse_repository_fn(
         A tuple containing a text summary, the directory structure,
             and the content of each file.
     """
-    max_file_size = max_file_size * (1024 * 1024)  # Convert Bytes to Megabytes
+    max_file_size_bytes = int(max_file_size * 1024 * 1024)  # Convert MB to Bytes
     gr.Info("Parsing repository")
     summary, tree, content = repositoryParser.parse_repository(
         input_repository_path,
-        max_file_size,
+        max_file_size_bytes,
         include_patterns,
         exclude_patterns,
     )
@@ -181,7 +181,16 @@ def parse_repository_fn(
     return summary, tree, content
 
 
-def base_prompt_fn(output_type, prompt):
+def base_prompt_fn(output_type: str, prompt: str) -> str:
+    """Returns the base prompt based on the output type.
+
+    Args:
+        output_type: The type of output to generate.
+        prompt: The current prompt.
+
+    Returns:
+        The base prompt.
+    """
     if output_type == ContentOutputType.README.value:
         return DEFAULT_README_PROMPT.strip()
     elif output_type == ContentOutputType.CODE_IMPROVEMENT.value:
@@ -194,9 +203,18 @@ def base_prompt_fn(output_type, prompt):
         return prompt
 
 
-def show_markdown_fn(content, btn):
-    if btn == "Show to markdown version":
-        btn_text = "Hide to markdown version"
+def show_markdown_fn(content: str, btn: str) -> Tuple[Dict[str, Any], str]:
+    """Toggles the visibility of a markdown component.
+
+    Args:
+        content: The content to display in the markdown.
+        btn: The text of the button.
+
+    Returns:
+        A tuple containing the markdown component update and the new button text.
+    """
+    if btn == "Show the markdown version":
+        btn_text = "Hide the markdown version"
         markdown = gr.Markdown(
             value=content,
             visible=True,
@@ -204,7 +222,7 @@ def show_markdown_fn(content, btn):
     else:
         if not content:
             gr.Info("Generated content is empty")
-        btn_text = "Show to markdown version"
+        btn_text = "Show the markdown version"
         markdown = gr.Markdown(visible=False)
 
     return [markdown, btn_text]
@@ -242,7 +260,7 @@ with gr.Blocks() as demo:
                             max_file_size = gr.Slider(
                                 0.01,
                                 100,
-                                value=1,
+                                value=1.0,
                                 step=0.1,
                                 interactive=True,
                                 label="Include files under (MB)",
