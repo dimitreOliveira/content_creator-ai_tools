@@ -1,8 +1,12 @@
 generate_public_url: true
-ai_studio:
-  model_id: gemini-2.0-flash-exp
+llm_model_configs:
+  provider: ai_studio # One of [ai_studio, vertex_ai]
+  model_id: gemini-2.0-pro-exp-02-05
   generation_config:
     temperature: 1
     top_p: 0.95
     top_k: 40
     max_output_tokens: 8192
+vertex_ai:
+  project: {VERTEX_AI_PROJECT}
+  location: {VERTEX_AI_LOCATION}

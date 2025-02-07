@@ -173,10 +173,13 @@ make lint
 
 ## TODO (not in any particular order)
 - Add support to add multiple files to the prompt in any order (e.g. [file, text], [file, text, file, file], etc)
-- Add support for Vertex API
 - Add support for local open-source models
 - Add support to TTS audio generation
 - Add support to image generation
     - create a set X of optional illustrations for content
 - Add support to video generation
     - create a set X of optional videos for content
+
+## Rferences
+- [Google Gen AI SDK [Docs]](https://googleapis.github.io/python-genai)
+- [Google Gen AI SDK [GitHub]](https://github.com/googleapis/python-genai)

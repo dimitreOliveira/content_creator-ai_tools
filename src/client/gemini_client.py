@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from google import genai
@@ -6,14 +7,42 @@ from google.genai import types
 
 from client.base_client import BaseClient
 from utils.logger import setup_logger
-import base64
-
 
 logger = setup_logger(__name__)
 
 
 class BaseGeminiClient(BaseClient):
     """Base class for the Google Gemini API client."""
+
+    def build_prompt_content(
+        self, prompt: str, file_upload: Optional[types.File | types.Part] = None
+    ) -> list:
+        """Builds the prompt content to be used by the Gemini API.
+
+        Args:
+            prompt: The text prompt.
+            file_upload: The file upload object (optional).
+
+        Returns:
+            Content list
+        """
+
+        logger.info("Building prompt content")
+        contents = [prompt]
+
+        if file_upload:
+            contents = [
+                types.Content(
+                    parts=[
+                        types.Part.from_uri(
+                            file_uri=file_upload.uri,
+                            mime_type=file_upload.mime_type,
+                        )
+                    ]
+                )
+            ] + contents
+
+        return contents
 
     def count_tokens(
         self, prompt: str, file_upload: Optional[types.File | types.Part] = None
@@ -28,19 +57,7 @@ class BaseGeminiClient(BaseClient):
             The total number of tokens.
         """
 
-        contents = [prompt]
-
-        if file_upload:
-            contents = [
-                types.Content(
-                    parts=[
-                        types.Part.from_uri(
-                            file_uri=file_upload.uri,
-                            mime_type=file_upload.mime_type,
-                        )
-                    ]
-                )
-            ] + contents
+        contents = self.build_prompt_content(prompt, file_upload)
 
         response = self.client.models.count_tokens(
             model=self.configs["model_id"], contents=contents
@@ -63,19 +80,7 @@ class BaseGeminiClient(BaseClient):
             The generated text output.
         """
 
-        contents = [prompt]
-
-        if file_upload:
-            contents = [
-                types.Content(
-                    role="user",
-                    parts=[
-                        types.Part.from_uri(
-                            file_uri=file_upload.uri, mime_type=file_upload.mime_type
-                        )
-                    ],
-                )
-            ] + contents
+        contents = self.build_prompt_content(prompt, file_upload)
 
         response = self.client.models.generate_content(
             model=self.configs["model_id"],
@@ -124,7 +129,8 @@ class AIStudioGeminiClient(BaseGeminiClient):
             The file upload object from the API.
         """
         file_upload = self.client.files.upload(path=file_path)
-        logger.info(f"Uploaded file: {file_upload.uri}")
+        logger.info(f"Uploaded file: {Path(file_path).name}")
+        logger.info(f"Uploaded file URI: {file_upload.uri}")
         return file_upload
 
 
@@ -141,52 +147,63 @@ class VertexAIGeminiClient(BaseGeminiClient):
 
         self.client = genai.Client(
             vertexai=True,
-            project=vertex_ai_configs['project'],
-            location=vertex_ai_configs['location'],
+            project=vertex_ai_configs["project"],
+            location=vertex_ai_configs["location"],
         )
         self.configs = configs
         logger.info(f"Gemini client intialized with configs: {self.configs}")
 
-    def process_file_for_vertex(self, uploaded_file: list) -> types.Part:
+    def build_prompt_content(
+        self, prompt: str, file_upload: Optional[types.File | types.Part] = None
+    ) -> list:
+        """Builds the prompt content to be used by the Gemini API.
+
+        Args:
+            prompt: The text prompt.
+            file_upload: The file upload object (optional).
+
+        Returns:
+            Content list
+        """
+
+        logger.info("Building prompt content")
+        contents = [prompt]
+
+        if file_upload:
+            contents = [file_upload, prompt]
+
+        return contents
+
+    def process_file_for_vertex(self, file_path: str) -> types.Part:
         """Process and format files to be sent as part of a Vertex API request.
 
         Args:
-            uploaded_file (list): File that will be processed.
+            file_path: The path to the file to upload.
 
         Returns:
             types.Part: Processed file.
         """
         logger.info("Processing files for Vertex")
 
-        # logger.info("-" * 50)
-        # logger.info(uploaded_file)
-        # logger.info("-" * 50)
-        # logger.info(open(uploaded_file, "rb").read())
-        # logger.info("-" * 50)
-        # logger.info(base64.b64encode(open(uploaded_file, "rb").read()).decode('utf-8'))
-        # logger.info("-" * 50)
-
-        # file_name = uploaded_file.name
-        # file_extension = file_name.split(".")[-1]
-        # logger.info(f"Processing file '{file_name}'")
-        # if file_extension in ["txt", "md"]:
-        #     file = types.Part.from_text(uploaded_file.read().decode())
-        # elif file_extension in ["pdf"]:
-        #     file = types.Part.from_data(uploaded_file.read(), mime_type="application/pdf")
-
-        logger.info(f"Processing file '{uploaded_file}'")
-        file_extension = uploaded_file.split(".")[-1]
-        file_content = open(uploaded_file, "rb").read()
-        encoded_file = base64.b64encode(file_content).decode("utf-8")
+        logger.info(f"Processing file '{file_path}'")
+        file_extension = file_path.split(".")[-1]
+        file_content = open(file_path, "rb").read()
         if file_extension in ["txt", "md"]:
-            file = types.Part.from_text(file_content)
+            file = types.Part.from_text(file_content.decode())
         elif file_extension in ["pdf"]:
-            file = types.Part.from_data(encoded_file, mime_type="application/pdf")
+            file = types.Part.from_bytes(file_content, mime_type="application/pdf")
+        elif file_extension in ["py"]:
+            file = types.Part.from_bytes(file_content, mime_type="text/x-python-script")
+        else:
+            logger.info(
+                "File extension not supported by Vertex AI, "
+                "currently only supported (.txt, .md, .pdf, .py)."
+            )
+            raise ValueError(
+                "File extension not supported by Vertex AI, "
+                "currently only supported (.txt, .md, .pdf, .py)."
+            )
 
-        logger.info("_" * 50)
-        logger.info(file)
-        logger.info(type(file))
-        logger.info("_" * 50)
         return file
 
     def upload_file(self, file_path: str) -> types.File:
@@ -199,6 +216,5 @@ class VertexAIGeminiClient(BaseGeminiClient):
             The file upload object from the API.
         """
         file_upload = self.process_file_for_vertex(file_path)
-        # logger.info(f"Uploaded file: {file_upload.uri}")
-        logger.info(f"Uploaded file: {file_upload}")
+        logger.info(f"Uploaded file: {Path(file_path).name}")
         return file_upload

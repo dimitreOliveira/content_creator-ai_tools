@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import gradio as gr
 from dotenv import load_dotenv
@@ -29,7 +29,7 @@ def generate_fn(
     additional_prompt: str,
     input_type: Optional[str],
     output_type: Optional[str],
-) -> Dict[str, Any]:
+) -> list[str, Any]:
     """Generates content based on user input and configurations.
 
     Args:
@@ -114,6 +114,7 @@ def generate_fn(
         gr.Info("Generating output...")
         output = geminiClient.generate_content(prompt)
 
+    gr.Info("Output generated")
     logger.info("Output generated")
 
     return [output, gr.Row(visible=True)]
@@ -144,6 +145,7 @@ def iterate_fn(prompt: str, additional_prompt: str) -> str:
 
     gr.Info("Generating output...")
     output = geminiClient.generate_content(prompt)
+    gr.Info("Output generated")
 
     return output
 
@@ -174,6 +176,7 @@ def parse_repository_fn(
         include_patterns,
         exclude_patterns,
     )
+    gr.Info("Parsing finished")
 
     return summary, tree, content
 
@@ -230,8 +233,8 @@ with gr.Blocks() as demo:
 
                         input_repository_path = gr.Textbox(
                             label=(
-                                "Input option 3: ",
-                                "Provide a URL or path to a repository and parse it",
+                                "Input option 3: "
+                                "Provide a URL or path to a repository and parse it"
                             )
                         )
 
@@ -365,13 +368,13 @@ if __name__ == "__main__":
     load_dotenv()
 
     # Identify the type of configurations we are loading
-    if app_configs['llm_model_configs']['provider'] == "ai_studio":
-        geminiClient = AIStudioGeminiClient(app_configs['llm_model_configs'])
+    if app_configs["llm_model_configs"]["provider"] == "ai_studio":
+        geminiClient = AIStudioGeminiClient(app_configs["llm_model_configs"])
         logger.info("Using AI Studio configuration")
-    elif app_configs['llm_model_configs']['provider'] == "vertex_ai":
+    elif app_configs["llm_model_configs"]["provider"] == "vertex_ai":
         geminiClient = VertexAIGeminiClient(
-            app_configs['llm_model_configs'],
-            app_configs['vertex_ai'],
+            app_configs["llm_model_configs"],
+            app_configs["vertex_ai"],
         )
         logger.info("Using Vertex AI configuration")
     else:
