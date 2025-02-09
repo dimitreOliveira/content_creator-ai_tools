@@ -11,11 +11,14 @@ logger = setup_logger(__name__)
 def load_config(config_path: str = "configs.yaml") -> Optional[Dict[str, Any]]:
     """Loads configuration from a YAML file.
 
+    The function attempts to load the configuration from the specified YAML file.
+
     Args:
-        config_path: Path to the YAML configuration file.
+        config_path: Path to the configuration file (YAML).
 
     Returns:
         A dictionary containing the configuration parameters, or None if loading fails.
+        Returns an empty dictionary if the file is empty, rather than None.
     """
     try:
         with open(config_path, "r") as file:

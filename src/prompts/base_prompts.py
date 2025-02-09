@@ -1,10 +1,11 @@
-DEFAULT_README_PROMPT = """
-The readme must start with a summary of the app, what it does, and its purpose.
-Create sections for "How to use", "Examples", "Usage", "Setup", "App workflow".
-Also, add explanations about the configs and the Makefile commands.
-Use placeholders for the screenshots and architecture diagrams.
-Add disclaimers if necessary.
-"""
+DEFAULT_README_PROMPT = (
+    "The readme must start with a summary of the app, what it does, and its purpose.\n"
+    "Create sections for 'How to use', 'Examples', 'Usage', 'Setup', "
+    "and 'App workflow'.\n"
+    "Also, add explanations about the configs and the Makefile commands.\n"
+    "Use placeholders for the screenshots and architecture diagrams.\n"
+    "Add disclaimers if necessary."
+)
 
 DEFAULT_CODE_IMPROVEMENT_PROMPT = (
     "Refactor this code by fixing any existing bug or by "
@@ -12,7 +13,7 @@ DEFAULT_CODE_IMPROVEMENT_PROMPT = (
     "Add documentation and typing to all the relevant places.\n"
     "Make sure that the code uses the best practices.\n"
     "Outline with comments in the code the modification made.\n"
-    "Only output the actual code not the code diffs."
+    "Only output the actual code, not the code diffs."
 )
 
 DEFAULT_CODE_BASE_PROMPT = (

@@ -43,8 +43,9 @@ def generate_fn(
         output_type: The desired output content type.
 
     Returns:
-       A dictionary containing generated text output and a flag to control UI.
+       A tuple containing generated text output and UI update dictionary.
     """
+    # Input validation
     if not input_type:
         raise gr.Error("Choose an input type")
 
@@ -52,12 +53,13 @@ def generate_fn(
         raise gr.Error("Choose an output type")
 
     if (
-        (not input_text)
-        and (not input_file)
-        and (not (parsed_repository_tree and parsed_repository_content))
+        not input_text
+        and not input_file
+        and not (parsed_repository_tree and parsed_repository_content)
     ):
         raise gr.Error("Provide an input file (text, repository or file)")
 
+    # Ensure only one input is provided
     if (
         sum(
             map(
@@ -76,9 +78,10 @@ def generate_fn(
     prompt = f"Create a {output_type} based on this {input_type} input."
     logger.info(f"Base prompt:\n{prompt}")
 
-    output: str = ""  # Initialize output to default empty string
+    output: str = ""
 
     if parsed_repository_tree and parsed_repository_content:
+        # Combine repository info with additional prompt
         prompt = (
             f"{parsed_repository_tree}\n{parsed_repository_content}\n",
             f"{prompt}\n{additional_prompt}",
@@ -92,6 +95,7 @@ def generate_fn(
         output = geminiClient.generate_content(prompt)
 
     elif input_file:
+        # For file input, use the file content in the prompt
         prompt = f"{prompt}\n{additional_prompt}"
 
         gr.Info("Uploading file...")
@@ -105,6 +109,7 @@ def generate_fn(
         output = geminiClient.generate_content(prompt, file_upload)
 
     elif input_text:
+        # For text input, use the provided text in the prompt
         prompt = f"{prompt}\n{additional_prompt}\n{input_text}"
 
         gr.Info("Counting prompt token count...")
@@ -121,16 +126,17 @@ def generate_fn(
 
 
 def iterate_fn(prompt: str, additional_prompt: str) -> str:
-    """Generates content based on user input and configurations.
+    """Generates content iteratively based on the previous output
+        and additional instructions.
 
     Args:
-        prompt: Base prompt used for the iteration.
-        additional_prompt: Additional instructions from the user.
+        prompt: The previous output or base prompt.
+        additional_prompt: Additional instructions for the iteration.
 
     Returns:
        The generated text output.
     """
-
+    # Input validation
     if not prompt:
         raise gr.Error("Input prompt is empty")
 
@@ -156,19 +162,19 @@ def parse_repository_fn(
     include_patterns: Optional[str] = None,
     exclude_patterns: str = ".*",
 ) -> Tuple[str, str, str]:
-    """Parses a git repository into text.
+    """Parses a git repository and extracts its structure and content.
 
     Args:
-        input_repository_path: Path to the repository
-        max_file_size: Max file size to include in the parsing process (in MB).
-        include_patterns: File patterns to include in parsing.
-        exclude_patterns: File patterns to exclude in parsing.
+        input_repository_path: Path or URL to the repository.
+        max_file_size: The maximum size of files to include (in MB).
+        include_patterns: File patterns to include during parsing.
+        exclude_patterns: File patterns to exclude during parsing.
 
     Returns:
-        A tuple containing a text summary, the directory structure,
-            and the content of each file.
+        A tuple containing the repository summary, directory tree, and file contents.
     """
-    max_file_size_bytes = int(max_file_size * 1024 * 1024)  # Convert MB to Bytes
+    # Convert max file size to bytes
+    max_file_size_bytes = int(max_file_size * 1024 * 1024)
     gr.Info("Parsing repository")
     summary, tree, content = repositoryParser.parse_repository(
         input_repository_path,
@@ -182,15 +188,16 @@ def parse_repository_fn(
 
 
 def base_prompt_fn(output_type: str, prompt: str) -> str:
-    """Returns the base prompt based on the output type.
+    """Returns a base prompt string based on the selected output type.
 
     Args:
-        output_type: The type of output to generate.
-        prompt: The current prompt.
+        output_type: The type of output to generate (e.g., README, code improvement).
+        prompt: The current prompt (used if no specific base prompt is available).
 
     Returns:
-        The base prompt.
+        The appropriate base prompt.
     """
+    # Return the corresponding default prompt based on output type
     if output_type == ContentOutputType.README.value:
         return DEFAULT_README_PROMPT.strip()
     elif output_type == ContentOutputType.CODE_IMPROVEMENT.value:
@@ -200,19 +207,21 @@ def base_prompt_fn(output_type: str, prompt: str) -> str:
     elif output_type == ContentOutputType.BLOG_POST.value:
         return DEFAULT_BLOG_POST_PROMPT.strip()
     else:
+        # If no specific prompt is found, return the current prompt
         return prompt
 
 
 def show_markdown_fn(content: str, btn: str) -> Tuple[Dict[str, Any], str]:
-    """Toggles the visibility of a markdown component.
+    """Toggles the visibility of a markdown component for displaying generated content.
 
     Args:
-        content: The content to display in the markdown.
-        btn: The text of the button.
+        content: The generated content to display.
+        btn: The current text of the toggle button.
 
     Returns:
-        A tuple containing the markdown component update and the new button text.
+        A tuple with the updated markdown component and the new button text.
     """
+    # Toggle markdown visibility based on button text
     if btn == "Show the markdown version":
         btn_text = "Hide the markdown version"
         markdown = gr.Markdown(
@@ -382,10 +391,10 @@ if __name__ == "__main__":
     if not app_configs:
         exit()
 
-    # Load env vars
+    # Load environment variables
     load_dotenv()
 
-    # Identify the type of configurations we are loading
+    # Initialize the appropriate Gemini client based on configuration
     if app_configs["llm_model_configs"]["provider"] == "ai_studio":
         geminiClient = AIStudioGeminiClient(app_configs["llm_model_configs"])
         logger.info("Using AI Studio configuration")
@@ -396,11 +405,14 @@ if __name__ == "__main__":
         )
         logger.info("Using Vertex AI configuration")
     else:
-        raise gr.Error("Invalid configs")
+        raise gr.Error("Invalid configs: 'provider' must be 'ai_studio' or 'vertex_ai'")
 
+    # Check if a public URL should be generated
     if app_configs["generate_public_url"]:
         logger.info("App generated a public shareable link, check logs for the URL")
 
+    # Initialize the RepositoryParser
     repositoryParser = RepositoryParser()
 
+    # Launch the Gradio app
     demo.launch(share=app_configs["generate_public_url"])
