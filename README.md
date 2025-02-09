@@ -138,24 +138,38 @@ make lint
 
 The application's behavior can be configured using the `configs.yaml` file.
 
+The application supports both AI Studio and Vertex AI.  Edit the `configs.yaml` file to select your preferred provider.
+
 ```yaml
-generate_public_url: true
-ai_studio:
-  model_id: gemini-2.0-flash-exp
-  generation_config:
-    temperature: 1
-    top_p: 0.95
-    top_k: 40
-    max_output_tokens: 8192
+generate_public_url: false # Set to true to generate a public shareable link
+llm_model_configs:
+    provider: ai_studio # One of [ai_studio, vertex_ai]
+    model_id: gemini-2.0-pro-exp-02-05 # Or any other supported model
+    generation_config:
+        temperature: 0.7
+        top_p: 0.95
+        top_k: 40
+        max_output_tokens: 10000
+vertex_ai:  # Only needed if provider is "vertex_ai"
+    project: "{your-gcp-project-id}"
+    location: "{your-gcp-project-location}"
+
 ```
-- **generate_public_url:** If the APP will generate a public shareable link, check logs for the URL (Gradio public URLs expires after 72 hours).
-- **ai_studio:** Contains configurations specific to the AI Studio/Gemini client.
-    - **model_id:** Specifies the Gemini model to be used (e.g., gemini-2.0-flash-exp).
-    - **generation_config:** Parameters to control the content generation process.
-        - **temperature:** Controls the randomness of the output. Higher values (e.g., 1) make the output more random, while lower values (e.g., 0) make it more deterministic.
-        - **top_p:** Nucleus sampling. Considers the smallest set of most probable tokens whose probabilities sum to at least top_p.
-        - **top_k:** Considers the top_k most likely tokens.
-        - **max_output_tokens:** The maximum number of tokens the model can generate in the output.
+
+* **`generate_public_url`**: (Optional)
+    *   **`true`:** Generate a public shareable link, check logs for the URL (Gradio public URLs expires after 72 hours).
+    *   **`false`:** Default value (local usage).
+*   **`llm_model_configs`:**
+    *   **`provider`:**  Specifies the Gemini API provider: `"ai_studio"` or `"vertex_ai"`.
+    *   **`model_id`:** The ID of the Gemini model to use (e.g., `"gemini-2.0-flash-exp"`).
+    *   **`generation_config`:** Parameters to control the content generation process.
+        *   **`temperature`:** Controls the randomness of the output (0.0 is deterministic, 1.0 is most random).
+        *   **`top_p`:**  Controls the diversity of the output (nucleus sampling).
+        *   **`top_k`:**  Controls the diversity of the output (top-k sampling).
+        *   **`max_output_tokens`:** The maximum number of tokens to generate.
+*   **`vertex_ai`:** (Only required if `provider` is `"vertex_ai"`)
+    *   **`project`:** Your Google Cloud project ID.
+    *   **`location`:** The Google Cloud region (e.g., `"us-central1"`).
 
 ## Contributing
 
