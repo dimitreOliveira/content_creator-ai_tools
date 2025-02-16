@@ -188,6 +188,6 @@ make lint
 - Add support to video generation
     - create a set X of optional videos for content
 
-## Rferences
+## References
 - [Google Gen AI SDK [Docs]](https://googleapis.github.io/python-genai)
 - [Google Gen AI SDK [GitHub]](https://github.com/googleapis/python-genai)
