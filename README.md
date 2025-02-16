@@ -1,8 +1,9 @@
 # Content Creator AI Tools
 
-This application provides an AI-powered solution for generating different types of content, such as blog posts, README files, code improvements, and video walkthroughs, based on provided inputs. It can process either local files or GitHub repositories to serve as context for content generation. The purpose of this tool is to streamline the content creation process using the power of AI models.
+This application provides an AI-powered solution for generating different types of technical content, such as blog posts, README files, code improvements, and video walkthroughs, based on provided inputs.
+It can process either regular text, local files or GitHub repositories to serve as context for content generation. The purpose of this tool is to streamline the content creation process using the power of AI models.
 
-The current iteration of this applicaiton leverages Gemini through the [Google AI studio](https://aistudio.google.com/) API to generate content.
+The current iteration of this applicaiton leverages Gemini through the [Google AI studio](https://aistudio.google.com/) and [Vertex AI](https://cloud.google.com/vertex-ai) API to generate content.
 
 **Supported input types**
 - Blog post
@@ -19,7 +20,7 @@ The current iteration of this applicaiton leverages Gemini through the [Google A
 
 ![](./assets/diagram.jpg)
 
-The application provides a user-friendly interface built with Gradio. You can input a file or a repository path, specify the input and output content types, and provide additional instructions. The application then uses the Gemini AI model to generate the desired content.
+The application provides a user-friendly interface built with Gradio. You can input text, a file or a repository path, specify the input and output content types, and provide additional instructions. The application then uses the Gemini AI model to generate the desired content.
 
 1. Select the type of the input content in the "Input type" dropdown.
 2. Choose the desired output content type from the "What kind of content would you like to create?" dropdown.
@@ -38,8 +39,6 @@ The application provides a user-friendly interface built with Gradio. You can in
 
 ### Prerequisites
 
--  A [Google AI studio](https://aistudio.google.com/) API key (set as `GEMINI_API_KEY` in your environment variables)
-
 1. **Clone the repository:**
 ```bash
 git clone https://github.com/dimitreOliveira/content_creator-ai_tools.git
@@ -49,8 +48,7 @@ cd content_creator-ai_tools
 2. **Create a virtual environment (recommended):**
 ```bash
 python -m venv content_creator_ai_tools
-source content_creator_ai_tools/bin/activate  # On Linux/macOS
-content_creator_ai_tools\Scripts\activate  # On Windows
+source content_creator_ai_tools/bin/activate
 ```
 
 3. **Install the dependencies:**
@@ -62,7 +60,10 @@ Alternatively, you can use `pip`:
 pip install -r requirements.txt
 ```
 
-4. **Set up the Gemini API key:**
+4.1 **Set up the local permission:**
+
+#### If If you are using [Google AI studio](https://aistudio.google.com/) as the provider.
+
 -   Obtain an API key from [Google AI studio](https://aistudio.google.com/).
 -   Set the `GEMINI_API_KEY` environment variable with your API key. You can do this by adding the following line to your `.bashrc`, `.zshrc`, or similar shell configuration file:
 ```bash
@@ -74,11 +75,18 @@ GEMINI_API_KEY=YOUR_API_KEY
 ```
 If using a .env file, ensure you have python-dotenv installed (it should be if you ran make build).
 
+#### If you are using [Vertex AI](https://cloud.google.com/vertex-ai) as the provider.
+
+Make sure that your project [supports Vertex AI](https://cloud.google.com/vertex-ai/docs/start/cloud-environment#console) then [login with the local SDK](https://cloud.google.com/vertex-ai/docs/python-sdk/use-vertex-ai-python-sdk)
+```bash
+gcloud auth application-default login
+```
+
 ## Usage (Makefile Commands)
 
 The Makefile provides convenient commands for common tasks:
 
-- Runs the Gradio application, then you can access in your web browser.
+- Runs the Gradio application, then you can access in your web browser, link will be at the logs.
 ```bash
 make app
 ```
@@ -123,22 +131,11 @@ make lint
 
 ![](./assets/example-text_input.png)
 
-## App workflow
-
-1. The user provides input, either a file or a repository path.
-2. If a repository path is provided, the application uses the `repository_parser.py` to parse the repository structure and content.
-3. The user selects the input and output content types and provides any additional instructions.
-4. The application constructs a prompt based on the input, selected types, and additional instructions.
-5. The prompt is sent to the Google Gemini API via the `gemini_client.py`.
-6. The Gemini API generates the content based on the prompt.
-7. The generated content is displayed to the user.
-8. The user can iterate on the generated content by providing further instructions.
-
 ## Configs
 
 The application's behavior can be configured using the `configs.yaml` file.
 
-The application supports both AI Studio and Vertex AI.  Edit the `configs.yaml` file to select your preferred provider.
+The application supports both AI Studio and Vertex AI. Edit the `configs.yaml` file to select your preferred provider.
 
 ```yaml
 generate_public_url: false # Set to true to generate a public shareable link
@@ -153,12 +150,9 @@ llm_model_configs:
 vertex_ai:  # Only needed if provider is "vertex_ai"
     project: "{your-gcp-project-id}"
     location: "{your-gcp-project-location}"
-
 ```
 
-* **`generate_public_url`**: (Optional)
-    *   **`true`:** Generate a public shareable link, check logs for the URL (Gradio public URLs expires after 72 hours).
-    *   **`false`:** Default value (local usage).
+* **`generate_public_url`**: If the app will generate a public shareable link, if `true`, check logs for the URL (Gradio public URLs expires after 72 hours).
 *   **`llm_model_configs`:**
     *   **`provider`:**  Specifies the Gemini API provider: `"ai_studio"` or `"vertex_ai"`.
     *   **`model_id`:** The ID of the Gemini model to use (e.g., `"gemini-2.0-flash-exp"`).
