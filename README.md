@@ -172,12 +172,16 @@ Contributions to this project are welcome! Feel free to fork the repository, mak
 make lint
 ```
 
-## Disclaimers
-
+## Disclaimers and Acknowledgements
+- Google Cloud credits are provided for this project as part of the #VertexAISprint
 - This application utilizes external APIs (like Google Gemini) which may have their own terms of service and usage limitations.
 - The quality of the generated content depends on the input provided and the capabilities of the underlying AI model.
 - Ensure you have the necessary permissions and comply with the terms of service for the underlying AI model.
 - The application is for informational and creative purposes. Always review and verify the generated content before using it.
+
+## References
+- [Google Gen AI SDK [Docs]](https://googleapis.github.io/python-genai)
+- [Google Gen AI SDK [GitHub]](https://github.com/googleapis/python-genai)
 
 ## TODO (not in any particular order)
 - Add support to add multiple files to the prompt in any order (e.g. [file, text], [file, text, file, file], etc)
@@ -187,7 +191,3 @@ make lint
     - create a set X of optional illustrations for content
 - Add support to video generation
     - create a set X of optional videos for content
-
-## References
-- [Google Gen AI SDK [Docs]](https://googleapis.github.io/python-genai)
-- [Google Gen AI SDK [GitHub]](https://github.com/googleapis/python-genai)
