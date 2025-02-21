@@ -3,7 +3,10 @@
 This application provides an AI-powered solution for generating different types of technical content, such as blog posts, README files, code improvements, and video walkthroughs, based on provided inputs.
 It can process either regular text, local files or GitHub repositories to serve as context for content generation. The purpose of this tool is to streamline the content creation process using the power of AI models.
 
-I have also written a blog post about this project, make sure to check "[Supercharge Your Technical Content Creation with Gemini](https://medium.com/google-developer-experts/supercharge-your-technical-content-creation-with-gemini-5311af82d807)"!
+
+### I have a YouTube video that discusses [How I Use Generative AI to Create Technical Content](https://www.youtube.com/watch?v=GcdpkzOcx5I) and also goes through this project.
+
+### I also wrote a blog post about it, make sure to check "[Supercharge Your Technical Content Creation with Gemini](https://medium.com/google-developer-experts/supercharge-your-technical-content-creation-with-gemini-5311af82d807)"!
 ---
 
 The current iteration of this applicaiton leverages Gemini through the [Google AI studio](https://aistudio.google.com/) and [Vertex AI](https://cloud.google.com/vertex-ai) API to generate content.
